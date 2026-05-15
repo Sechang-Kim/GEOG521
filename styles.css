@@ -156,6 +156,17 @@ a {
   font-size: clamp(1.12rem, 2vw, 1.35rem);
 }
 
+.author-line,
+.credit-line {
+  color: var(--accent-dark);
+  font-weight: 800;
+}
+
+.author-line {
+  margin: 16px 0 0;
+  font-size: 0.98rem;
+}
+
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
@@ -930,6 +941,11 @@ h3 {
   margin: 24px 0 0;
   color: #3f4c5f;
   font-size: clamp(1.05rem, 1.8vw, 1.28rem);
+}
+
+.crawler-hero .credit-line {
+  margin-top: 16px;
+  font-size: 0.98rem;
 }
 
 .query-panel {
