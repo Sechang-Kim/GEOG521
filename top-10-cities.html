@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Top 10 Cities in the US</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIINfQX7P5cnZJbqQkPqq44r7pD0wZu1i1w=" crossorigin="">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="map-page">
+  <header class="site-header">
+    <nav class="nav-bar" aria-label="Primary navigation">
+      <a class="brand" href="index.html">Seeing School Differently</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <ul class="nav-menu">
+        <li><a class="active" href="top-10-cities.html">Top 10 Cities in US</a></li>
+        <li><a href="#">Data Collection with Crawler</a></li>
+        <li><a href="#">Geospatial Data Classification</a></li>
+        <li><a href="#">Participatory GIS Platform</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="city-map-shell">
+    <section class="city-sidebar" aria-label="Top 10 cities list">
+      <p class="eyebrow">Interactive Map</p>
+      <h1>Top 10 Cities in the United States</h1>
+      <p class="sidebar-intro">
+        Explore the ten largest U.S. cities by 2025 Census population estimate.
+        Select a city to zoom to its marker and read a short introduction.
+      </p>
+
+      <div class="basemap-card">
+        <label for="basemapSelect">Base map</label>
+        <select id="basemapSelect">
+          <option value="osm">OpenStreetMap</option>
+          <option value="carto">CARTO Light</option>
+          <option value="satellite">Satellite Imagery</option>
+        </select>
+      </div>
+
+      <ol class="city-list" id="cityList"></ol>
+
+      <p class="data-note">
+        Population source:
+        <a href="https://www.census.gov/newsroom/press-releases/2026/vintage-2025-city-town-pop-estimates.html" target="_blank" rel="noreferrer">
+          U.S. Census Bureau Vintage 2025 city population estimates
+        </a>,
+        released May 14, 2026.
+      </p>
+    </section>
+
+    <section class="map-stage" aria-label="Map of top 10 United States cities">
+      <div id="cityMap"></div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    const cities = [
+      {
+        rank: 1,
+        name: 'New York',
+        state: 'New York',
+        population: 8584629,
+        coordinates: [40.7128, -74.0060],
+        intro: 'The nation\'s largest city is a global center of finance, media, migration, culture, and dense urban life across five boroughs.',
+        highlight: 'A city of layered neighborhoods, transit intensity, and iconic public spaces.'
+      },
+      {
+        rank: 2,
+        name: 'Los Angeles',
+        state: 'California',
+        population: 3869089,
+        coordinates: [34.0522, -118.2437],
+        intro: 'Los Angeles anchors Southern California with film, music, design, ports, universities, and a highly diverse metropolitan culture.',
+        highlight: 'A polycentric city shaped by freeways, mountains, coastlines, and creative industries.'
+      },
+      {
+        rank: 3,
+        name: 'Chicago',
+        state: 'Illinois',
+        population: 2731585,
+        coordinates: [41.8781, -87.6298],
+        intro: 'Chicago is the Midwest\'s largest city, known for architecture, rail and lakefront geography, neighborhood identity, and cultural production.',
+        highlight: 'A Great Lakes city where infrastructure, public space, and neighborhood history are tightly connected.'
+      },
+      {
+        rank: 4,
+        name: 'Houston',
+        state: 'Texas',
+        population: 2397315,
+        coordinates: [29.7604, -95.3698],
+        intro: 'Houston is a fast-growing Gulf Coast metropolis with major roles in energy, medicine, space research, logistics, and global migration.',
+        highlight: 'A sprawling, diverse city where growth, climate risk, and mobility intersect.'
+      },
+      {
+        rank: 5,
+        name: 'Phoenix',
+        state: 'Arizona',
+        population: 1665481,
+        coordinates: [33.4484, -112.0740],
+        intro: 'Phoenix is the largest city in the desert Southwest, shaped by rapid growth, arid-land urbanism, mountains, and regional migration.',
+        highlight: 'A desert metropolis where heat, water, housing, and expansion define urban geography.'
+      },
+      {
+        rank: 6,
+        name: 'Philadelphia',
+        state: 'Pennsylvania',
+        population: 1574281,
+        coordinates: [39.9526, -75.1652],
+        intro: 'Philadelphia combines deep U.S. historical significance with universities, medicine, arts, rowhouse neighborhoods, and strong civic identity.',
+        highlight: 'A historic city where compact neighborhoods and public memory shape everyday space.'
+      },
+      {
+        rank: 7,
+        name: 'San Antonio',
+        state: 'Texas',
+        population: 1548422,
+        coordinates: [29.4241, -98.4936],
+        intro: 'San Antonio is a major South Texas city known for military institutions, tourism, Mexican American heritage, and rapid population growth.',
+        highlight: 'A culturally rich city where heritage landscapes meet contemporary metropolitan expansion.'
+      },
+      {
+        rank: 8,
+        name: 'San Diego',
+        state: 'California',
+        population: 1406106,
+        coordinates: [32.7157, -117.1611],
+        intro: 'San Diego is a Pacific border city with major roles in defense, biotechnology, tourism, higher education, and coastal urban life.',
+        highlight: 'A coastal city shaped by beaches, canyons, military landscapes, and the U.S.-Mexico border region.'
+      },
+      {
+        rank: 9,
+        name: 'Dallas',
+        state: 'Texas',
+        population: 1329491,
+        coordinates: [32.7767, -96.7970],
+        intro: 'Dallas is a major North Texas business, transportation, arts, and technology hub within one of the country\'s fastest-growing metro areas.',
+        highlight: 'A Sun Belt city defined by regional connectivity, redevelopment, and metropolitan scale.'
+      },
+      {
+        rank: 10,
+        name: 'Fort Worth',
+        state: 'Texas',
+        population: 1028117,
+        coordinates: [32.7555, -97.3308],
+        intro: 'Fort Worth is a major North Texas city with deep ties to ranching history, aviation, logistics, museums, universities, and rapid metropolitan growth.',
+        highlight: 'A fast-growing Sun Belt city where western heritage, infrastructure, and suburban expansion meet.'
+      }
+    ];
+
+    const formatPopulation = new Intl.NumberFormat('en-US');
+    const map = L.map('cityMap', {
+      center: [39.5, -98.35],
+      zoom: 4,
+      scrollWheelZoom: true
+    });
+
+    const baseLayers = {
+      osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }),
+      carto: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 20,
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+      }),
+      satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+      })
+    };
+
+    baseLayers.osm.addTo(map);
+
+    const markerGroup = L.layerGroup().addTo(map);
+    const markers = new Map();
+    const cityList = document.getElementById('cityList');
+
+    function markerIcon(rank) {
+      return L.divIcon({
+        className: 'city-marker',
+        html: `<span>${rank}</span>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+        popupAnchor: [0, -18]
+      });
+    }
+
+    function popupTemplate(city) {
+      return `
+        <article class="city-popup">
+          <p class="popup-rank">#${city.rank} Largest U.S. City</p>
+          <h2>${city.name}, ${city.state}</h2>
+          <p class="popup-pop">Population: <strong>${formatPopulation.format(city.population)}</strong> <span>(2025 estimate)</span></p>
+          <p>${city.intro}</p>
+          <p class="popup-highlight">${city.highlight}</p>
+        </article>
+      `;
+    }
+
+    cities.forEach((city) => {
+      const marker = L.marker(city.coordinates, { icon: markerIcon(city.rank) })
+        .bindPopup(popupTemplate(city), { maxWidth: 330 })
+        .addTo(markerGroup);
+
+      markers.set(city.name, marker);
+
+      const item = document.createElement('li');
+      item.innerHTML = `
+        <button type="button" data-city="${city.name}">
+          <span class="city-rank">${city.rank}</span>
+          <span class="city-meta">
+            <strong>${city.name}</strong>
+            <span>${city.state} | ${formatPopulation.format(city.population)}</span>
+          </span>
+        </button>
+      `;
+      cityList.appendChild(item);
+    });
+
+    cityList.addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-city]');
+      if (!button) return;
+
+      const city = cities.find((item) => item.name === button.dataset.city);
+      const marker = markers.get(city.name);
+
+      document.querySelectorAll('.city-list button').forEach((item) => item.classList.remove('selected'));
+      button.classList.add('selected');
+      map.flyTo(city.coordinates, 9, { duration: 0.8 });
+      marker.openPopup();
+    });
+
+    document.getElementById('basemapSelect').addEventListener('change', (event) => {
+      Object.values(baseLayers).forEach((layer) => map.removeLayer(layer));
+      baseLayers[event.target.value].addTo(map);
+    });
+
+    const navToggle = document.querySelector('.nav-toggle');
+    const navMenu = document.querySelector('.nav-menu');
+
+    navToggle.addEventListener('click', () => {
+      const isOpen = navToggle.getAttribute('aria-expanded') === 'true';
+      navToggle.setAttribute('aria-expanded', String(!isOpen));
+      navMenu.classList.toggle('is-open');
+    });
+  </script>
+</body>
+</html>

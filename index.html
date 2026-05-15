@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seeing School Differently</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav-bar" aria-label="Primary navigation">
+      <a class="brand" href="index.html">Seeing School Differently</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <ul class="nav-menu">
+        <li><a href="top-10-cities.html">Top 10 Cities in US</a></li>
+        <li><a href="#">Data Collection with Crawler</a></li>
+        <li><a href="#">Geospatial Data Classification</a></li>
+        <li><a href="#">Participatory GIS Platform</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">Critical Qualitative GIS</p>
+        <h1>Seeing School Differently</h1>
+        <p class="hero-lede">
+          A web introduction to a project on students' everyday school spaces,
+          meanings, emotions, and lived geographies.
+        </p>
+        <div class="hero-actions" aria-label="Page sections">
+          <a class="button primary" href="#overview">Project Overview</a>
+          <a class="button secondary" href="#methods">Methods</a>
+        </div>
+      </div>
+      <aside class="map-panel" aria-label="Conceptual map graphic">
+        <div class="map-grid">
+          <div class="school-plan" aria-hidden="true">
+            <div class="place place-home">
+              <span class="place-icon">1</span>
+              <span>Route to school</span>
+            </div>
+            <div class="place place-hallway">
+              <span class="place-icon">2</span>
+              <span>Hallway</span>
+            </div>
+            <div class="place place-classroom">
+              <span class="place-icon">3</span>
+              <span>Classroom</span>
+            </div>
+            <div class="place place-cafeteria">
+              <span class="place-icon">4</span>
+              <span>Cafeteria</span>
+            </div>
+            <div class="place place-playground">
+              <span class="place-icon">5</span>
+              <span>Playground</span>
+            </div>
+
+            <span class="path path-a"></span>
+            <span class="path path-b"></span>
+            <span class="path path-c"></span>
+            <span class="path path-d"></span>
+
+            <div class="meaning-note note-hallway">
+              <strong>Meaning</strong>
+              surveillance or belonging
+            </div>
+            <div class="meaning-note note-cafeteria">
+              <strong>Meaning</strong>
+              social comfort or exclusion
+            </div>
+
+            <div class="emotion-chip chip-safe">safe</div>
+            <div class="emotion-chip chip-worry">worry</div>
+            <div class="emotion-chip chip-belong">belonging</div>
+          </div>
+          <div class="focus-legend" aria-label="Infographic legend">
+            <span><i class="legend-line"></i>Where students go</span>
+            <span><i class="legend-note"></i>What places mean</span>
+            <span><i class="legend-chip"></i>How places feel</span>
+          </div>
+        </div>
+        <div class="map-caption">
+          <strong>Focus:</strong> where students go, what places mean, and how
+          those places feel.
+        </div>
+      </aside>
+    </section>
+
+    <section id="overview" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Background</p>
+        <h2>Why School Space Needs a Different Lens</h2>
+      </div>
+      <div class="two-column">
+        <p>
+          Existing research on children and students' everyday geographies shows
+          that young people do not use space uniformly. Students may move
+          differently, perceive risk differently, and attach distinct meanings to
+          ordinary places such as classrooms, hallways, cafeterias, playgrounds,
+          and routes to school.
+        </p>
+        <p>
+          This project begins from the assumption that students are not a
+          homogeneous population. Immigrant-background students and
+          non-immigrant students may inhabit, navigate, interpret, and feel
+          school-related spaces in different ways. The goal is to examine the
+          gap between officially defined school space and lived school space.
+        </p>
+      </div>
+    </section>
+
+    <section class="section muted">
+      <div class="section-heading">
+        <p class="eyebrow">Research Questions</p>
+        <h2>From Location to Meaning to Emotion</h2>
+      </div>
+      <div class="question-grid">
+        <article class="question-card">
+          <span class="number">01</span>
+          <h3>Everyday Spaces</h3>
+          <p>
+            Do immigrant-background students and non-immigrant students differ
+            in the spaces they use, inhabit, or avoid?
+          </p>
+        </article>
+        <article class="question-card">
+          <span class="number">02</span>
+          <h3>Interpretation</h3>
+          <p>
+            Even when students occupy similar locations, do they notice,
+            interpret, and describe those places differently?
+          </p>
+        </article>
+        <article class="question-card">
+          <span class="number">03</span>
+          <h3>Emotion</h3>
+          <p>
+            How are spatial practices connected to comfort, discomfort, worry,
+            fear, happiness, belonging, or exclusion?
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="methods" class="section split-section">
+      <div>
+        <p class="eyebrow">Methods</p>
+        <h2>Geotagged Photovoice and Qualitative GIS</h2>
+        <p>
+          The project would use geotagged photovoice as a central method,
+          asking students to document meaningful, ordinary, comforting,
+          uncomfortable, or emotionally charged spaces related to school life.
+          Participants could also add captions, audio notes, drawings, or short
+          reflections to explain what they documented and why it matters.
+        </p>
+      </div>
+      <div class="method-list">
+        <div class="method-item">
+          <h3>Spatial Visualization</h3>
+          <p>
+            GIS can identify recurring locations, routes, clusters, and activity
+            spaces where experiences concentrate, overlap, or diverge.
+          </p>
+        </div>
+        <div class="method-item">
+          <h3>Qualitative Coding</h3>
+          <p>
+            Captions, stories, drawings, and reflections can be coded for
+            recurring meanings, emotional themes, and place-based narratives.
+          </p>
+        </div>
+        <div class="method-item">
+          <h3>Reflexive Mapping</h3>
+          <p>
+            Maps can use layered annotation, color coding, and place-emotion
+            matrices without reducing lived experience to simple numbers.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="feature-band">
+        <div>
+          <p class="eyebrow">Theory</p>
+          <h2>Official Space and Lived Space</h2>
+        </div>
+        <p>
+          Drawing on Lefebvre, the project focuses on spatial practice and
+          representational space: how students actually move through school
+          environments and how they imagine, interpret, and feel those places.
+          A hallway may be institutionally defined as a neutral circulation
+          space, yet experienced as a site of surveillance, anxiety, safety, or
+          belonging.
+        </p>
+      </div>
+    </section>
+
+    <section class="section muted">
+      <div class="section-heading">
+        <p class="eyebrow">Critical GIS</p>
+        <h2>Listen First, Map Later</h2>
+      </div>
+      <div class="two-column">
+        <p>
+          A key principle is that not everything meaningful is fully mappable.
+          The study should avoid forcing students into predefined categories or
+          researcher-designed layers before their experiences are heard.
+        </p>
+        <p>
+          Participatory mapping is shaped by inclusion, exclusion, institutions,
+          and technical design choices. This project therefore treats ambiguous,
+          partial, contradictory, and hard-to-locate experiences as important
+          evidence rather than noise.
+        </p>
+      </div>
+    </section>
+
+    <section class="section contribution">
+      <div class="section-heading">
+        <p class="eyebrow">Contribution</p>
+        <h2>What This Project Adds</h2>
+      </div>
+      <ol class="contribution-list">
+        <li>
+          It challenges the tendency to treat students as one homogeneous group.
+        </li>
+        <li>
+          It combines photovoice, qualitative interpretation, and GIS while
+          foregrounding lived meaning and emotion.
+        </li>
+        <li>
+          It uses spatial analysis to explore everyday educational experience,
+          not only administratively legible school space.
+        </li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>GEOG 521 Critical GIS | Seeing School Differently</p>
+  </footer>
+
+  <script>
+    const navToggle = document.querySelector('.nav-toggle');
+    const navMenu = document.querySelector('.nav-menu');
+
+    navToggle.addEventListener('click', () => {
+      const isOpen = navToggle.getAttribute('aria-expanded') === 'true';
+      navToggle.setAttribute('aria-expanded', String(!isOpen));
+      navMenu.classList.toggle('is-open');
+    });
+  </script>
+</body>
+</html>
