@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geospatial Data Classification</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav-bar" aria-label="Primary navigation">
+      <a class="brand" href="index.html">Seeing School Differently</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <ul class="nav-menu">
+        <li><a href="top-10-cities.html">Top 10 Cities in US</a></li>
+        <li><a href="data-collection.html">Data Collection with Crawler</a></li>
+        <li><a class="active" href="geospatial-classification.html">Geospatial Data Classification</a></li>
+        <li><a href="#">Participatory GIS Platform</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="classification-hero">
+      <div>
+        <p class="eyebrow">OSMnx Logic in HTML</p>
+        <h1>Church Classification as Counter-Mapping</h1>
+        <p>
+          Martin Luther King Jr. argued that Sunday at 11:00 AM was one of the
+          most segregated moments in American life. Starting from that insight,
+          this map asks how places with the same label, "church," may carry
+          different meanings of belonging, familiarity, and welcome for
+          different communities.
+        </p>
+      </div>
+      <aside class="classification-note">
+        <h2>Important Method</h2>
+        <p>
+          The categories classify public OSM names and tags. They do not prove
+          the race, ethnicity, or identity of congregants.
+        </p>
+      </aside>
+    </section>
+
+    <section class="dualmap-section">
+      <div class="dualmap-toolbar">
+        <div>
+          <p class="eyebrow">Interactive Comparison</p>
+          <h2>Two Maps, Same Legend</h2>
+        </div>
+        <a class="source-code-link" href="https://colab.research.google.com/drive/1XKYWnc12AlYul5PO5ViD7z3_WeaRkbuV#scrollTo=Vc2h7DH2dohP" target="_blank" rel="noreferrer">
+          Original Colab Code
+        </a>
+      </div>
+
+      <div class="embedded-dualmap-card">
+        <header>
+          <h3>Asian Church Map and Black Church Map</h3>
+          <p>
+            This embedded map is rendered from the original notebook output and
+            preserves the Folium DualMap interaction.
+          </p>
+        </header>
+        <iframe
+          src="dual_map_church_classification.html"
+          title="Dual map church classification"
+          loading="lazy">
+        </iframe>
+      </div>
+
+      <div class="classification-legend" aria-label="Shared legend">
+        <span><i class="legend-belonging"></i>Spiritual and Belonging</span>
+        <span><i class="legend-welcoming"></i>Unfamiliar, Yet Welcoming</span>
+      </div>
+      <p class="classification-status">
+        Visitors can refer to the original notebook code through the
+        <a href="https://colab.research.google.com/drive/1XKYWnc12AlYul5PO5ViD7z3_WeaRkbuV#scrollTo=Vc2h7DH2dohP" target="_blank" rel="noreferrer">Colab source link</a>.
+      </p>
+    </section>
+
+    <section class="classification-reflection">
+      <div class="section-heading">
+        <p class="eyebrow">Reflection</p>
+        <h2>Classification Logic and Interpretation</h2>
+      </div>
+
+      <div class="reflection-grid">
+        <article>
+          <h3>1. What logic guided your classification?</h3>
+          <p>
+            My classification was guided by Martin Luther King Jr.'s argument
+            that Sunday at 11:00 AM is one of the most segregated times in
+            American life. This observation suggests that churches should not be
+            understood only as a single institutional category. Even when places
+            share the same label, such as "church," their meanings can differ
+            greatly depending on race, ethnicity, memory, and belonging. For
+            this reason, I classified churches through visible community signals
+            in OSM names and tags, focusing on Asian churches in one map and
+            Black churches in the other. This differs from the planner or
+            community view in the original lab because it does not classify
+            facilities by function, service, or public utility. Instead, it asks
+            how the same religious landscape may be experienced differently by
+            different subjects.
+          </p>
+        </article>
+
+        <article>
+          <h3>2. What changes appeared on your map?</h3>
+          <p>
+            Under this classification, the map changed from a simple
+            distribution of churches into a map of possible belonging,
+            unfamiliarity, and affective experience. Some churches became more
+            visible because their names or tags publicly signal Asian or Black
+            religious community identity. These places were categorized as
+            "Spiritual and Belonging." Other churches were not treated as
+            negative or exclusionary. Because churches are religious spaces, I
+            assume they may welcome people across ethnic boundaries. Therefore,
+            I used the phrase "Unfamiliar, Yet Welcoming" rather than terms such
+            as uncomfortable or unsafe. This category points to places that may
+            not immediately feel culturally familiar, but still hold the
+            possibility of hospitality, encounter, and social mixing. The map
+            therefore highlights experience and affection, not only location.
+          </p>
+        </article>
+
+        <article>
+          <h3>3. How would you present your map?</h3>
+          <p>
+            I would present this map to church leaders, community organizations,
+            students, and urban researchers as a conversation tool rather than a
+            definitive demographic map. I would emphasize that the categories
+            are based on visible OSM signals, not direct knowledge of congregant
+            identity. The purpose is to ask how religious spaces become legible
+            as places of belonging, and how other spaces might still become
+            welcoming through social encounter. For design, I avoided highly
+            oppositional color pairs such as black and white or red and blue,
+            because the map is not meant to create a harsh binary. Instead, I
+            used warm colors, `#DA895A` and `#E9C386`, to suggest openness,
+            ambiguity, and the possibility of social mix.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="crawler-section muted-wide">
+      <div class="section-heading">
+        <p class="eyebrow">Foldable Code</p>
+        <h2>Core Notebook Logic</h2>
+      </div>
+
+      <div class="code-accordion">
+        <details>
+          <summary>Step 1: OSMnx Tags for Church Collection</summary>
+          <pre><code>place_name = "Seattle, Washington, USA"
+
+tags = {
+    "amenity": "place_of_worship",
+    "building": "church"
+}
+
+pois = ox.features_from_place(place_name, tags)
+pois = pois.reset_index()
+pois["marker_geometry"] = pois.geometry.representative_point()</code></pre>
+        </details>
+
+        <details>
+          <summary>Step 2: Filter Likely Christian Churches</summary>
+          <pre><code>churches = pois[
+    (pois["religion"].str.lower() == "christian") |
+    (pois["building"].str.lower() == "church") |
+    (pois["name"].str.contains(
+        r"church|chapel|ministry|fellowship|cathedral|parish",
+        case=False,
+        na=False
+    ))
+].copy()</code></pre>
+        </details>
+
+        <details>
+          <summary>Step 3: Asian Church Signal Tags</summary>
+          <pre><code>TEXT_FIELDS = ["name", "denomination", "operator", "description"]
+
+ASIAN_PATTERNS = [
+    r"\basian\b",
+    r"\bkorean\b", r"\bkorea\b",
+    r"\bchinese\b", r"\bchina\b",
+    r"\bvietnamese\b", r"\bvietnam\b",
+    r"\bjapanese\b", r"\bjapan\b",
+    r"\bfilipino\b", r"\bphilippine\b", r"\bphilippines\b",
+    r"\bhmong\b",
+    r"\bcambodian\b", r"\bcambodia\b", r"\bkhmer\b",
+    r"\blao\b", r"\blaotian\b",
+    r"\bthai\b", r"\bthailand\b",
+    r"\btaiwanese\b", r"\btaiwan\b",
+    r"\bindian\b", r"\bindia\b",
+    r"\bindonesian\b", r"\bindonesia\b",
+    r"\bmandarin\b", r"\bcantonese\b"
+]</code></pre>
+        </details>
+
+        <details>
+          <summary>Step 4: Black Church Signal Tags</summary>
+          <pre><code>BLACK_PATTERNS = [
+    # Explicit racial / community identity
+    r"\bblack\b",
+    r"\bafrican american\b",
+    r"\bafro[- ]american\b",
+
+    # Historically Black denominations / traditions
+    r"\bafrican methodist episcopal\b",
+    r"\ba\.?m\.?e\.?\b",
+    r"\bame zion\b",
+    r"\bafrican methodist episcopal zion\b",
+    r"\bchurch of god in christ\b",
+    r"\bcogic\b",
+    r"\bnational baptist\b",
+    r"\bprogressive national baptist\b",
+    r"\bmissionary baptist\b",
+
+    # African / diaspora identity
+    r"\bafrican\b",
+    r"\bethiopian\b", r"\bethiopia\b",
+    r"\bethio\w*\b",
+    r"\babyssinian\b",
+    r"\beritrean\b", r"\beritrea\b",
+    r"\bghanaian\b", r"\bghana\b",
+    r"\bnigerian\b", r"\bnigeria\b",
+    r"\bkenyan\b", r"\bkenya\b",
+    r"\bsomali\b", r"\bsomalia\b",
+    r"\bsudanese\b", r"\bsudan\b",
+    r"\bcongolese\b", r"\bcongo\b",
+    r"\bcameroonian\b", r"\bcameroon\b",
+    r"\bliberian\b", r"\bliberia\b",
+    r"\bsierra leonean\b", r"\bsierra leone\b",
+
+    # Caribbean / Afro-diasporic identity
+    r"\bcaribbean\b",
+    r"\bjamaican\b", r"\bjamaica\b",
+    r"\bhaitian\b", r"\bhaiti\b",
+    r"\btrinidad\b", r"\btobago\b",
+    r"\bbarbadian\b", r"\bbarbados\b"
+]</code></pre>
+        </details>
+
+        <details>
+          <summary>Step 5: Classification Function</summary>
+          <pre><code>def classify_by_patterns(row, patterns):
+    text = " ".join(
+        str(row.get(col, ""))
+        for col in ["name", "denomination", "operator", "description"]
+    ).lower()
+
+    for pattern in patterns:
+        if re.search(pattern, text, flags=re.IGNORECASE):
+            return "Spiritual and Belonging"
+
+    return "Unfamiliar, Yet Welcoming"</code></pre>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>GEOG 521 Critical GIS | Geospatial Data Classification</p>
+  </footer>
+
+  <script>
+    const navToggle = document.querySelector('.nav-toggle');
+    const navMenu = document.querySelector('.nav-menu');
+
+    navToggle.addEventListener('click', () => {
+      const isOpen = navToggle.getAttribute('aria-expanded') === 'true';
+      navToggle.setAttribute('aria-expanded', String(!isOpen));
+      navMenu.classList.toggle('is-open');
+    });
+  </script>
+</body>
+</html>
