@@ -26,7 +26,14 @@
   </header>
 
   <main class="city-map-shell">
-    <section class="city-sidebar" aria-label="Top 10 cities list">
+    <button class="city-sidebar-tab" type="button" aria-controls="citySidebar" aria-expanded="false">
+      Cities
+    </button>
+
+    <section class="city-sidebar" id="citySidebar" aria-label="Top 10 cities list">
+      <button class="city-sidebar-toggle" type="button" aria-controls="citySidebar" aria-expanded="true">
+        Hide Panel
+      </button>
       <p class="eyebrow">Interactive Map</p>
       <h1>Top 10 Cities in the United States</h1>
       <p class="sidebar-intro">
@@ -249,6 +256,20 @@
       navToggle.setAttribute('aria-expanded', String(!isOpen));
       navMenu.classList.toggle('is-open');
     });
+
+    const cityShell = document.querySelector('.city-map-shell');
+    const sidebarToggle = document.querySelector('.city-sidebar-toggle');
+    const sidebarTab = document.querySelector('.city-sidebar-tab');
+
+    function setSidebar(open) {
+      cityShell.classList.toggle('sidebar-collapsed', !open);
+      sidebarToggle.setAttribute('aria-expanded', String(open));
+      sidebarTab.setAttribute('aria-expanded', String(open));
+      window.setTimeout(() => map.invalidateSize(), 260);
+    }
+
+    sidebarToggle.addEventListener('click', () => setSidebar(false));
+    sidebarTab.addEventListener('click', () => setSidebar(true));
   </script>
 </body>
 </html>
