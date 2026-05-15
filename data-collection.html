@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Collection with Crawler</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav-bar" aria-label="Primary navigation">
+      <a class="brand" href="index.html">Seeing School Differently</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <ul class="nav-menu">
+        <li><a href="top-10-cities.html">Top 10 Cities in US</a></li>
+        <li><a class="active" href="data-collection.html">Data Collection with Crawler</a></li>
+        <li><a href="#">Geospatial Data Classification</a></li>
+        <li><a href="#">Participatory GIS Platform</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="crawler-hero">
+      <div>
+        <p class="eyebrow">YouTube Search Crawler</p>
+        <h1>Collecting Migration Discourse from YouTube Search Results</h1>
+        <p>
+          This workflow uses a Selenium crawler in Google Colab to collect
+          rendered YouTube search results, save them as CSV files, and translate
+          text patterns into word cloud visualizations.
+        </p>
+      </div>
+      <aside class="query-panel">
+        <h2>Three Search Queries</h2>
+        <p>
+          These queries were used to capture three distinct aspects of
+          migration.
+        </p>
+        <ul>
+          <li>Climate Refugees</li>
+          <li>US Immigrants</li>
+          <li>Immigrants Students</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section class="crawler-section">
+      <div class="section-heading">
+        <p class="eyebrow">Process</p>
+        <h2>From Search Results to Visual Summary</h2>
+      </div>
+      <div class="workflow-grid">
+        <article>
+          <span>01</span>
+          <h3>Configure the Query</h3>
+          <p>
+            The notebook defines a search term, target number of videos, scroll
+            limits, and an output path on Google Drive.
+          </p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Open YouTube with Selenium</h3>
+          <p>
+            Selenium launches headless Chrome because YouTube search results are
+            rendered dynamically by JavaScript.
+          </p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Parse Video Cards</h3>
+          <p>
+            BeautifulSoup extracts video URL, title, channel, view count,
+            relative upload time, description, and collection timestamp.
+          </p>
+        </article>
+        <article>
+          <span>04</span>
+          <h3>Export and Visualize</h3>
+          <p>
+            Results are saved as CSV files, then text fields are summarized
+            through word clouds for comparison across the three queries.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="crawler-section muted-wide">
+      <div class="section-heading">
+        <p class="eyebrow">Foldable Code</p>
+        <h2>Notebook Workflow</h2>
+      </div>
+
+      <div class="code-accordion">
+        <details>
+          <summary>Step 1: Install Chrome and Python Libraries</summary>
+          <pre><code># Install Google Chrome and crawler libraries in Google Colab
+!apt-get -qq update
+!wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+!apt-get install -y ./google-chrome-stable_current_amd64.deb
+!rm -f google-chrome-stable_current_amd64.deb
+
+!pip install -q "selenium&gt;=4.15" beautifulsoup4 pandas
+!google-chrome --version</code></pre>
+        </details>
+
+        <details>
+          <summary>Step 2: Configure Three Queries and Outputs</summary>
+          <pre><code># The notebook was reused three times with these search queries.
+# Together, they capture three distinct aspects of migration.
+QUERIES = [
+    "Climate Refugees",
+    "US Immigrants",
+    "Immigrants Students",
+]
+
+MAX_ITEMS    = 200
+MAX_SCROLLS  = 30
+SCROLL_PAUSE = 2.0
+HEADLESS     = True
+
+# Example run. Change QUERY and OUTPUT_PATH for each dataset.
+QUERY       = "Immigrants Students"
+OUTPUT_PATH = "/content/drive/MyDrive/GEOG 521: Critical GIS/Immigrants Students.csv"</code></pre>
+        </details>
+
+        <details>
+          <summary>Step 3: Build the Headless Browser</summary>
+          <pre><code>from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+def build_driver(headless=True):
+    opts = Options()
+    opts.binary_location = "/usr/bin/google-chrome"
+    if headless:
+        opts.add_argument("--headless=new")
+    opts.add_argument("--no-sandbox")
+    opts.add_argument("--disable-dev-shm-usage")
+    opts.add_argument("--disable-gpu")
+    opts.add_argument("--window-size=1280,1800")
+    opts.add_argument("--lang=en-US")
+    return webdriver.Chrome(options=opts)</code></pre>
+        </details>
+
+        <details>
+          <summary>Step 4: Parse a YouTube Video Card</summary>
+          <pre><code>def parse_card(card):
+    title_tag = card.find("a", id="video-title")
+    if not title_tag or not title_tag.get("href"):
+        return None
+
+    channel_tag = card.find("a", class_=re.compile(r"yt-simple-endpoint.*yt-formatted-string"))
+    meta_tags = card.find_all("span", class_="inline-metadata-item style-scope ytd-video-meta-block")
+    desc_tag = card.find("yt-formatted-string",
+                         class_="metadata-snippet-text style-scope ytd-video-renderer")
+
+    collected_at = datetime.now(timezone.utc)
+    view_raw = meta_tags[0].get_text(strip=True) if len(meta_tags) &gt; 0 else None
+    created_raw = meta_tags[1].get_text(strip=True) if len(meta_tags) &gt; 1 else None
+
+    return {
+        "video_url": "https://www.youtube.com" + title_tag["href"],
+        "title": title_tag.get("title") or title_tag.get_text(strip=True),
+        "username": channel_tag.get_text(strip=True) if channel_tag else None,
+        "view_num": parse_view_count(view_raw),
+        "created_at": parse_relative_time(created_raw, collected_at),
+        "shortdesc": desc_tag.get_text(" ", strip=True) if desc_tag else None,
+        "collected_at": collected_at,
+    }</code></pre>
+        </details>
+
+        <details>
+          <summary>Step 5: Scrape, Deduplicate, and Save CSV</summary>
+          <pre><code>df = scrape_youtube_search(QUERY)
+log.info("collected %d unique videos", len(df))
+
+df.to_csv(OUTPUT_PATH, index=False)
+log.info("saved %d rows to %s", len(df), OUTPUT_PATH)</code></pre>
+        </details>
+
+        <details>
+          <summary>Step 6: Create Word Clouds with WordArt.com</summary>
+          <pre><code># Word clouds were created outside Python with WordArt.com.
+# Core workflow:
+# 1. Use title and shortdesc text from each crawler CSV.
+# 2. Paste the cleaned text into WordArt.com.
+# 3. Generate and export one PNG for each migration query.</code></pre>
+          <figure class="wordart-example">
+            <img src="image/wordart_example.png" alt="WordArt.com word cloud creation example">
+            <figcaption>Example interface used to generate the word cloud images in WordArt.com.</figcaption>
+          </figure>
+        </details>
+      </div>
+    </section>
+
+    <section class="crawler-section">
+      <div class="section-heading">
+        <p class="eyebrow">Outputs</p>
+        <h2>Word Cloud Results</h2>
+      </div>
+      <div class="wordcloud-gallery">
+        <article>
+          <img src="img/climate refugees.png" alt="Word cloud for Climate Refugees query">
+          <div>
+            <h3>Climate Refugees</h3>
+            <p>
+              This query highlights migration in relation to climate pressure,
+              environmental displacement, and vulnerability.
+            </p>
+          </div>
+        </article>
+        <article>
+          <img src="img/US Immigrants.png" alt="Word cloud for US Immigrants query">
+          <div>
+            <h3>US Immigrants</h3>
+            <p>
+              This query focuses on national immigration discourse, policy,
+              border politics, and public narratives in the United States.
+            </p>
+          </div>
+        </article>
+        <article>
+          <img src="img/Immigrants Students.png" alt="Word cloud for Immigrants Students query">
+          <div>
+            <h3>Immigrants Students</h3>
+            <p>
+              This query connects migration to education, belonging, school
+              experience, and student life.
+            </p>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>GEOG 521 Critical GIS | Data Collection with Crawler</p>
+  </footer>
+
+  <script>
+    const navToggle = document.querySelector('.nav-toggle');
+    const navMenu = document.querySelector('.nav-menu');
+
+    navToggle.addEventListener('click', () => {
+      const isOpen = navToggle.getAttribute('aria-expanded') === 'true';
+      navToggle.setAttribute('aria-expanded', String(!isOpen));
+      navMenu.classList.toggle('is-open');
+    });
+  </script>
+</body>
+</html>
