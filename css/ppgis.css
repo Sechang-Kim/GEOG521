@@ -333,7 +333,7 @@
 
 .ppgis-floating-panel {
   position: absolute;
-  left: 24px;
+  left: 48px;
   top: 24px;
   z-index: 20;
   width: min(360px, calc(100vw - 48px));
@@ -381,7 +381,7 @@
 
 .ppgis-panel-tab {
   position: absolute;
-  left: 24px;
+  left: 48px;
   top: 24px;
   z-index: 19;
   opacity: 0;
