@@ -14,6 +14,7 @@ The project began from a proposal on students' everyday school geographies and e
 - `top-10-cities.html` demonstrates interactive web mapping with markers, popups, base map choices, and a collapsible city information panel.
 - `data-collection.html` explains a YouTube crawler workflow used to collect migration-related search results and visualize them through word clouds.
 - `geospatial-classification.html` presents a church classification counter-map using OSM-based categories of belonging and unfamiliarity.
+- `participatory-gis.html` provides a Supabase-backed platform for moderated public map submissions.
 - `styles.css` provides the shared visual design for the website.
 
 ## Core Themes

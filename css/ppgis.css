@@ -1,0 +1,765 @@
+.ppgis-shell {
+  background: var(--paper);
+}
+
+.ppgis-intro {
+  width: min(1180px, calc(100% - 32px));
+  min-height: calc(58vh - 72px);
+  margin: 0 auto;
+  padding: 72px 0 54px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.38fr);
+  gap: 42px;
+  align-items: center;
+}
+
+.ppgis-intro h1 {
+  max-width: 840px;
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.ppgis-intro p {
+  max-width: 720px;
+  margin: 22px 0 0;
+  color: #3f4c5f;
+  font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+}
+
+.ppgis-intro aside {
+  padding: 26px;
+  color: var(--white);
+  background: var(--nav);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.ppgis-intro aside h2 {
+  margin: 0;
+  color: var(--white);
+  line-height: 1.12;
+}
+
+.ppgis-intro aside p {
+  margin: 14px 0 0;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 0.98rem;
+}
+
+.ppgis-workspace {
+  width: min(1280px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 0 0 84px;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.42fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.ppgis-panel,
+.ppgis-map-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 18px 48px rgba(16, 35, 49, 0.1);
+}
+
+.ppgis-panel {
+  padding: 22px;
+}
+
+.panel-heading h2,
+.map-card-header h2 {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.panel-heading p {
+  margin: 10px 0 0;
+  color: var(--muted);
+}
+
+.ppgis-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.ppgis-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ppgis-form input,
+.ppgis-form textarea {
+  width: 100%;
+  padding: 11px 12px;
+  color: var(--ink);
+  background: #fbfcfd;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 500;
+}
+
+.ppgis-form textarea {
+  resize: vertical;
+}
+
+.checkbox-field {
+  display: flex !important;
+  grid-template-columns: none;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px !important;
+  color: var(--text) !important;
+  font-weight: 700 !important;
+}
+
+.checkbox-field input {
+  width: 18px;
+  height: 18px;
+}
+
+.ppgis-form button,
+.map-card-header button {
+  min-height: 44px;
+  padding: 0 16px;
+  color: var(--white);
+  background: var(--accent);
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.ppgis-form button:hover,
+.ppgis-form button:focus-visible,
+.map-card-header button:hover,
+.map-card-header button:focus-visible {
+  background: var(--accent-dark);
+  outline: none;
+}
+
+.form-message,
+.map-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.form-message.success {
+  color: var(--accent-dark);
+  font-weight: 750;
+}
+
+.form-message.error,
+.map-message.error {
+  color: #a33d3d;
+  font-weight: 750;
+}
+
+.map-card-header {
+  min-height: 94px;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+#ppgisMap {
+  width: 100%;
+  height: 680px;
+  background: #d9e3df;
+}
+
+#ppgisMap.leaflet-container {
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+#ppgisMap .leaflet-pane,
+#ppgisMap .leaflet-tile,
+#ppgisMap .leaflet-marker-icon,
+#ppgisMap .leaflet-marker-shadow,
+#ppgisMap .leaflet-tile-container,
+#ppgisMap .leaflet-pane > svg,
+#ppgisMap .leaflet-pane > canvas,
+#ppgisMap .leaflet-zoom-box,
+#ppgisMap .leaflet-image-layer,
+#ppgisMap .leaflet-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+#ppgisMap .leaflet-tile {
+  width: 256px;
+  height: 256px;
+  max-width: none !important;
+  max-height: none !important;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  box-sizing: content-box;
+}
+
+#ppgisMap img {
+  max-width: none !important;
+}
+
+.ppgis-map-card .map-message {
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.submission-popup h3 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 1.08rem;
+}
+
+.submission-popup p {
+  margin: 0 0 8px;
+}
+
+.submission-popup a {
+  color: var(--accent-dark);
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ppgis-map-page {
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--nav);
+}
+
+.ppgis-popup-shell {
+  position: relative;
+  height: calc(100vh - 72px);
+  overflow: hidden;
+}
+
+.ppgis-full-map {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+#ppgisPopupMap {
+  width: 100%;
+  height: 100%;
+}
+
+#ppgisPopupMap {
+  background: #d9e3df;
+}
+
+#ppgisPopupMap.leaflet-container {
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+#ppgisPopupMap .leaflet-pane,
+#ppgisPopupMap .leaflet-tile,
+#ppgisPopupMap .leaflet-marker-icon,
+#ppgisPopupMap .leaflet-marker-shadow,
+#ppgisPopupMap .leaflet-tile-container,
+#ppgisPopupMap .leaflet-pane > svg,
+#ppgisPopupMap .leaflet-pane > canvas,
+#ppgisPopupMap .leaflet-zoom-box,
+#ppgisPopupMap .leaflet-image-layer,
+#ppgisPopupMap .leaflet-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+#ppgisPopupMap .leaflet-tile-pane {
+  z-index: 200;
+}
+
+#ppgisPopupMap .leaflet-overlay-pane {
+  z-index: 400;
+}
+
+#ppgisPopupMap .leaflet-shadow-pane {
+  z-index: 500;
+}
+
+#ppgisPopupMap .leaflet-marker-pane {
+  z-index: 650;
+}
+
+#ppgisPopupMap .leaflet-tooltip-pane {
+  z-index: 700;
+}
+
+#ppgisPopupMap .leaflet-tile {
+  width: 256px;
+  height: 256px;
+  max-width: none !important;
+  max-height: none !important;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  box-sizing: content-box;
+}
+
+#ppgisPopupMap img {
+  max-width: none !important;
+}
+
+.ppgis-floating-panel {
+  position: absolute;
+  left: 24px;
+  top: 24px;
+  z-index: 20;
+  width: min(360px, calc(100vw - 48px));
+  padding: 20px;
+  background: rgba(251, 252, 248, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 8px;
+  box-shadow: 0 26px 70px rgba(16, 35, 49, 0.26);
+  backdrop-filter: blur(18px);
+  transition: transform 240ms ease, opacity 180ms ease;
+}
+
+.ppgis-popup-shell.info-collapsed .ppgis-floating-panel {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(calc(-100% - 36px));
+}
+
+.ppgis-panel-toggle,
+.ppgis-panel-tab {
+  min-height: 38px;
+  padding: 0 12px;
+  color: var(--white);
+  background: var(--accent);
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.ppgis-panel-toggle:hover,
+.ppgis-panel-toggle:focus-visible,
+.ppgis-panel-tab:hover,
+.ppgis-panel-tab:focus-visible {
+  background: var(--accent-dark);
+  outline: none;
+}
+
+.ppgis-panel-toggle {
+  float: right;
+  margin: 0 0 10px 12px;
+}
+
+.ppgis-panel-tab {
+  position: absolute;
+  left: 24px;
+  top: 24px;
+  z-index: 19;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 14px 34px rgba(16, 35, 49, 0.22);
+  transform: translateX(-10px);
+  transition: opacity 180ms ease, transform 220ms ease;
+}
+
+.ppgis-popup-shell.info-collapsed .ppgis-panel-tab {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.ppgis-popover {
+  position: absolute;
+  right: 24px;
+  top: 24px;
+  z-index: 30;
+  width: min(360px, calc(100vw - 48px));
+  display: none;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 8px;
+  box-shadow: 0 26px 70px rgba(16, 35, 49, 0.28);
+  backdrop-filter: blur(18px);
+}
+
+.ppgis-popover.is-open {
+  display: block;
+}
+
+.ppgis-popover-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.ppgis-popover-close:hover,
+.ppgis-popover-close:focus-visible {
+  color: var(--ink);
+  background: var(--soft);
+  outline: none;
+}
+
+.ppgis-floating-panel h1 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 2rem;
+  line-height: 1.08;
+}
+
+.ppgis-floating-panel p {
+  margin: 12px 0;
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.ppgis-basemap-control {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0;
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ppgis-basemap-control select {
+  min-height: 38px;
+  padding: 0 10px;
+  color: var(--ink);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 650;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+#ppgisRefresh,
+.ppgis-popup-form button {
+  min-height: 40px;
+  padding: 0 14px;
+  color: var(--white);
+  background: var(--accent);
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+#ppgisRefresh:hover,
+#ppgisRefresh:focus-visible,
+.ppgis-popup-form button:hover,
+.ppgis-popup-form button:focus-visible {
+  background: var(--accent-dark);
+  outline: none;
+}
+
+.ppgis-status {
+  margin: 12px 0 0 !important;
+  color: var(--muted) !important;
+  font-size: 0.82rem !important;
+}
+
+.ppgis-status.error {
+  color: #a33d3d !important;
+  font-weight: 750;
+}
+
+.ppgis-popup-form {
+  width: 100%;
+  display: grid;
+  gap: 10px;
+}
+
+.ppgis-popup-form h3,
+.ppgis-public-popup h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
+.ppgis-popup-form label {
+  display: grid;
+  gap: 4px;
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.field-required,
+.field-optional {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.field-required {
+  color: #a33d3d;
+}
+
+.field-label-line {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.field-help {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.ppgis-popup-form input,
+.ppgis-popup-form textarea {
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+}
+
+.ppgis-popup-form textarea {
+  resize: vertical;
+}
+
+.ppgis-popup-check {
+  display: flex !important;
+  align-items: center;
+  gap: 8px !important;
+  font-size: 0.84rem !important;
+}
+
+.ppgis-popup-check input,
+.checkbox-label input {
+  width: 16px;
+  height: 16px;
+}
+
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 8px !important;
+  color: var(--text) !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+}
+
+.popup-form-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.popup-form-message.success {
+  color: var(--accent-dark);
+  font-weight: 750;
+}
+
+.popup-form-message.error {
+  color: #a33d3d;
+  font-weight: 750;
+}
+
+.ppgis-public-popup {
+  max-width: 100%;
+  padding-right: 28px;
+}
+
+.ppgis-public-popup p {
+  margin: 8px 0 0;
+}
+
+.ppgis-popup-media {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  margin-top: 12px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+.ppgis-popup-audio {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+}
+
+@media (max-width: 960px) {
+  .ppgis-intro,
+  .ppgis-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .ppgis-intro {
+    min-height: auto;
+    padding-top: 54px;
+  }
+
+  #ppgisMap {
+    height: 540px;
+  }
+}
+
+@media (max-width: 720px) {
+  .ppgis-map-page {
+    overflow: auto;
+  }
+
+  .ppgis-popup-shell {
+    height: calc(100vh - 72px);
+    min-height: 620px;
+    display: block;
+  }
+
+  .ppgis-floating-panel {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    width: min(330px, calc(100vw - 24px));
+    max-height: 42vh;
+    overflow-y: auto;
+    padding: 14px;
+    margin: 0;
+  }
+
+  .ppgis-popup-shell.info-collapsed .ppgis-floating-panel {
+    display: block;
+  }
+
+  .ppgis-panel-tab {
+    top: 12px;
+    left: 12px;
+  }
+
+  .ppgis-popover {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: 12px;
+    width: auto;
+    max-height: 54vh;
+    padding: 16px;
+    margin: 0;
+  }
+
+  .ppgis-full-map {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    min-height: 0;
+  }
+
+  .ppgis-floating-panel h1 {
+    font-size: 1.45rem;
+  }
+
+  .ppgis-floating-panel p {
+    font-size: 0.84rem;
+  }
+
+  .ppgis-popup-form {
+    gap: 8px;
+  }
+
+  .ppgis-popup-form input,
+  .ppgis-popup-form textarea {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .ppgis-floating-panel {
+    max-height: 36vh;
+  }
+
+  .ppgis-floating-panel p {
+    display: none;
+  }
+
+  .ppgis-basemap-control {
+    margin: 10px 0;
+  }
+
+  .ppgis-popover {
+    max-height: 60vh;
+  }
+}
+
+@media (max-height: 720px) and (min-width: 721px) {
+  .ppgis-popover {
+    max-height: calc(100vh - 96px);
+  }
+
+  .ppgis-floating-panel {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .field-row,
+  .map-card-header {
+    grid-template-columns: 1fr;
+  }
+
+  .map-card-header {
+    display: grid;
+    align-items: stretch;
+  }
+
+  .map-card-header button {
+    width: 100%;
+  }
+}
