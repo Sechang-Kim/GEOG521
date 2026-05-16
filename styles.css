@@ -1480,6 +1480,7 @@ h3 {
     left: 16px;
     right: 16px;
     top: 72px;
+    z-index: 1000;
     display: none;
     flex-direction: column;
     align-items: stretch;
