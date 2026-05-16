@@ -57,6 +57,10 @@ baseLayers.osm.addTo(map);
 
 const approvedLayer = L.featureGroup().addTo(map);
 let draftMarker = null;
+let recordedAudioFile = null;
+let mediaRecorder = null;
+let recordedAudioChunks = [];
+let activeAudioStream = null;
 
 function setStatus(message, type = "") {
   statusEl.textContent = message;
@@ -78,6 +82,7 @@ function openPopover(html) {
 }
 
 function closePopover() {
+  resetRecordingState();
   popover.classList.remove("is-open");
   popover.innerHTML = "";
 }
@@ -103,6 +108,7 @@ function publicPanel(row) {
 }
 
 function openSubmissionForm(lat, lng) {
+  recordedAudioFile = null;
   setStatus("Draft marker placed. Complete the form on the right.");
   openPopover(`
     <form class="ppgis-popup-form" data-lat="${lat}" data-lng="${lng}">
@@ -127,18 +133,39 @@ function openSubmissionForm(lat, lng) {
       </label>
       <label>
         <span class="field-label-line">Photo <span class="field-optional">optional</span></span>
-        <input id="photo-file" name="photo_file" type="file" accept="image/*" capture="environment">
-        <span class="field-help">On mobile, this can open the camera. On desktop, choose an image file.</span>
       </label>
+      <div class="media-choice-grid">
+        <label>
+          Upload Photo from Gallery
+          <input id="photo-upload-file" name="photo_upload_file" type="file" accept="image/*">
+        </label>
+        <label>
+          Take Photo
+          <input id="photo-capture-file" name="photo_capture_file" type="file" accept="image/*" capture="environment">
+        </label>
+      </div>
+      <p id="photo-status" class="media-status">No photo selected.</p>
       <label class="checkbox-label">
         <input type="checkbox" id="show-photo" name="show_photo" checked>
         Show my photo to other users
       </label>
       <label>
         <span class="field-label-line">Audio <span class="field-optional">optional</span></span>
-        <input id="audio-file" name="audio_file" type="file" accept="audio/*" capture>
-        <span class="field-help">On mobile, this can open recording options. On desktop, choose an audio file.</span>
       </label>
+      <div class="media-choice-grid">
+        <label>
+          Upload Audio File
+          <input id="audio-upload-file" name="audio_upload_file" type="file" accept="audio/*">
+        </label>
+        <div class="recording-controls">
+          <span>Record Audio</span>
+          <div class="recording-buttons">
+            <button id="start-recording" type="button">Start Recording</button>
+            <button id="stop-recording" type="button" disabled>Stop Recording</button>
+          </div>
+        </div>
+      </div>
+      <p id="audio-status" class="media-status">No audio selected or recorded.</p>
       <label class="checkbox-label">
         <input type="checkbox" id="show-audio" name="show_audio">
         Show my audio to other users
@@ -154,6 +181,31 @@ function clearDraftMarker() {
     draftMarker.remove();
     draftMarker = null;
   }
+}
+
+function selectedFileFromInput(id) {
+  const input = document.getElementById(id);
+  return input?.files?.[0] || null;
+}
+
+function setMediaStatus(id, message, type = "") {
+  const status = document.getElementById(id);
+  if (!status) return;
+  status.textContent = message;
+  status.className = `media-status ${type}`.trim();
+}
+
+function stopActiveAudioStream() {
+  if (activeAudioStream) {
+    activeAudioStream.getTracks().forEach((track) => track.stop());
+    activeAudioStream = null;
+  }
+}
+
+function resetRecordingState() {
+  recordedAudioChunks = [];
+  mediaRecorder = null;
+  stopActiveAudioStream();
 }
 
 function fileExtension(file) {
@@ -263,8 +315,78 @@ popover.addEventListener("click", (event) => {
       setStatus("Selection cleared.");
     }
     closePopover();
+    return;
+  }
+
+  if (event.target.closest("#start-recording")) {
+    startAudioRecording();
+    return;
+  }
+
+  if (event.target.closest("#stop-recording")) {
+    stopAudioRecording();
   }
 });
+
+popover.addEventListener("change", (event) => {
+  if (event.target.matches("#photo-upload-file, #photo-capture-file")) {
+    const file = event.target.files?.[0];
+    setMediaStatus("photo-status", file ? `Selected photo: ${file.name}` : "No photo selected.", file ? "success" : "");
+  }
+
+  if (event.target.matches("#audio-upload-file")) {
+    const file = event.target.files?.[0];
+    if (file) {
+      recordedAudioFile = null;
+    }
+    setMediaStatus("audio-status", file ? `Selected audio: ${file.name}` : "No audio selected or recorded.", file ? "success" : "");
+  }
+});
+
+async function startAudioRecording() {
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    alert("In-browser audio recording is not supported by this browser. Please upload an audio file instead.");
+    return;
+  }
+
+  try {
+    recordedAudioChunks = [];
+    activeAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(activeAudioStream);
+
+    mediaRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data.size > 0) {
+        recordedAudioChunks.push(event.data);
+      }
+    });
+
+    mediaRecorder.addEventListener("stop", () => {
+      const mimeType = mediaRecorder.mimeType || "audio/webm";
+      const blob = new Blob(recordedAudioChunks, { type: mimeType });
+      const extension = mimeType.includes("mp4") ? "m4a" : "webm";
+      recordedAudioFile = new File([blob], `recorded-audio-${crypto.randomUUID()}.${extension}`, { type: mimeType });
+      stopActiveAudioStream();
+      setMediaStatus("audio-status", `Recorded audio ready: ${recordedAudioFile.name}`, "success");
+      document.getElementById("start-recording").disabled = false;
+      document.getElementById("stop-recording").disabled = true;
+    });
+
+    mediaRecorder.start();
+    document.getElementById("start-recording").disabled = true;
+    document.getElementById("stop-recording").disabled = false;
+    setMediaStatus("audio-status", "Recording audio...", "recording");
+  } catch (error) {
+    console.error("Audio recording failed:", error);
+    alert("Could not start audio recording. Please check microphone permission or upload an audio file.");
+    resetRecordingState();
+  }
+}
+
+function stopAudioRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+}
 
 popover.addEventListener("submit", async (submitEvent) => {
   const form = submitEvent.target.closest(".ppgis-popup-form");
@@ -274,10 +396,8 @@ popover.addEventListener("submit", async (submitEvent) => {
 
   const message = form.querySelector(".popup-form-message:last-child");
   const formData = new FormData(form);
-  const photoFile = formData.get("photo_file");
-  const audioFile = formData.get("audio_file");
-  const selectedPhoto = photoFile instanceof File && photoFile.size > 0 ? photoFile : null;
-  const selectedAudio = audioFile instanceof File && audioFile.size > 0 ? audioFile : null;
+  const selectedPhoto = selectedFileFromInput("photo-capture-file") || selectedFileFromInput("photo-upload-file");
+  const selectedAudio = recordedAudioFile || selectedFileFromInput("audio-upload-file");
   const showPhoto = document.getElementById("show-photo").checked;
   const showAudio = document.getElementById("show-audio").checked;
   const payload = {
