@@ -135,13 +135,19 @@ function openSubmissionForm(lat, lng) {
         <span class="field-label-line">Photo <span class="field-optional">optional</span></span>
       </label>
       <div class="media-choice-grid">
-        <label>
-          Upload Photo from Gallery
+        <label class="media-action">
           <input id="photo-upload-file" name="photo_upload_file" type="file" accept="image/*">
+          <span class="media-action-ui" aria-hidden="true">
+            <img class="media-action-icon" src="img/gallery.png" alt="">
+            <span>Go to Gallery</span>
+          </span>
         </label>
-        <label>
-          Take Photo
+        <label class="media-action">
           <input id="photo-capture-file" name="photo_capture_file" type="file" accept="image/*" capture="environment">
+          <span class="media-action-ui" aria-hidden="true">
+            <img class="media-action-icon" src="img/camera.png" alt="">
+            <span>Go to Camera</span>
+          </span>
         </label>
       </div>
       <p id="photo-status" class="media-status">No photo selected.</p>
@@ -293,6 +299,15 @@ async function loadApprovedSubmissions() {
 }
 
 map.on("click", (event) => {
+  if (popover.classList.contains("is-open")) {
+    if (popover.querySelector(".ppgis-popup-form")) {
+      clearDraftMarker();
+      setStatus("Selection cleared.");
+    }
+    closePopover();
+    return;
+  }
+
   const { lat, lng } = event.latlng;
 
   if (draftMarker) {
