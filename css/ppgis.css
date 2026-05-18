@@ -527,12 +527,123 @@
   font-size: 1.05rem;
 }
 
+.ppgis-popup-form h4 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
 .ppgis-popup-form label {
   display: grid;
   gap: 4px;
   color: var(--ink);
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.form-step {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(251, 252, 253, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.step-label {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.log-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.log-type-card {
+  min-height: 70px !important;
+  padding: 8px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--ink) !important;
+  background: var(--white) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 8px !important;
+  box-shadow: none;
+}
+
+.log-type-card:hover,
+.log-type-card:focus-visible {
+  border-color: rgba(36, 122, 114, 0.5) !important;
+  box-shadow: 0 8px 18px rgba(16, 35, 49, 0.1);
+}
+
+.log-type-card.is-active {
+  color: var(--white) !important;
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+.log-type-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(36, 122, 114, 0.12);
+  border-radius: 50%;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.log-type-icon img {
+  width: 20px;
+  height: 20px;
+  display: block;
+  object-fit: contain;
+}
+
+.log-type-text-icon {
+  font-size: 0.78rem;
+}
+
+.log-type-audio-icon {
+  font-size: 0.58rem;
+}
+
+.log-type-card.is-active .log-type-icon {
+  color: var(--accent-dark);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.log-panel {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  background: var(--white);
+  border: 1px solid rgba(36, 122, 114, 0.18);
+  border-radius: 8px;
+}
+
+.log-panel[hidden] {
+  display: none;
+}
+
+.save-log-button {
+  width: fit-content;
+  min-height: 34px !important;
+  padding: 0 12px !important;
+  font-size: 0.76rem !important;
 }
 
 .field-required,

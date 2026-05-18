@@ -61,6 +61,10 @@ let recordedAudioFile = null;
 let mediaRecorder = null;
 let recordedAudioChunks = [];
 let activeAudioStream = null;
+let selectedLogTypes = new Set();
+let savedTextLog = null;
+let savedPhotoFile = null;
+let savedAudioFile = null;
 
 function setStatus(message, type = "") {
   statusEl.textContent = message;
@@ -83,8 +87,17 @@ function openPopover(html) {
 
 function closePopover() {
   resetRecordingState();
+  resetSavedLogState();
   popover.classList.remove("is-open");
   popover.innerHTML = "";
+}
+
+function resetSavedLogState() {
+  selectedLogTypes = new Set();
+  savedTextLog = null;
+  savedPhotoFile = null;
+  savedAudioFile = null;
+  recordedAudioFile = null;
 }
 
 function publicPanel(row) {
@@ -108,78 +121,160 @@ function publicPanel(row) {
 }
 
 function openSubmissionForm(lat, lng) {
-  recordedAudioFile = null;
+  resetSavedLogState();
   setStatus("Draft marker placed. Complete the form on the right.");
   openPopover(`
     <form class="ppgis-popup-form" data-lat="${lat}" data-lng="${lng}">
       <button class="ppgis-popover-close" type="button" aria-label="Close">&times;</button>
       <h3>Submit This Place</h3>
       <p class="popup-form-message">Selected location: ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
-      <label>
-        <span class="field-label-line">Name <span class="field-required">required</span></span>
-        <input name="real_name" type="text" required placeholder="Stored in master database">
-      </label>
-      <label class="ppgis-popup-check">
-        <input name="is_anonymous" type="checkbox" checked>
-        Anonymous
-      </label>
-      <label>
-        <span class="field-label-line">Title <span class="field-required">required</span></span>
-        <input name="title" type="text" maxlength="120" required placeholder="Short title">
-      </label>
-      <label>
-        <span class="field-label-line">Contents <span class="field-required">required</span></span>
-        <textarea name="body_text" rows="4" required placeholder="Describe this place or experience"></textarea>
-      </label>
-      <label>
-        <span class="field-label-line">Photo <span class="field-optional">optional</span></span>
-      </label>
-      <div class="media-choice-grid">
-        <label class="media-action">
-          <input id="photo-upload-file" name="photo_upload_file" type="file" accept="image/*">
-          <span class="media-action-ui" aria-hidden="true">
-            <img class="media-action-icon" src="img/gallery.png" alt="">
-            <span>Go to Gallery</span>
-          </span>
-        </label>
-        <label class="media-action">
-          <input id="photo-capture-file" name="photo_capture_file" type="file" accept="image/*" capture="environment">
-          <span class="media-action-ui" aria-hidden="true">
-            <img class="media-action-icon" src="img/camera.png" alt="">
-            <span>Go to Camera</span>
-          </span>
-        </label>
-      </div>
-      <p id="photo-status" class="media-status">No photo selected.</p>
-      <label class="checkbox-label">
-        <input type="checkbox" id="show-photo" name="show_photo" checked>
-        Show my photo to other users
-      </label>
-      <label>
-        <span class="field-label-line">Audio <span class="field-optional">optional</span></span>
-      </label>
-      <div class="media-choice-grid">
+
+      <section class="form-step">
+        <p class="step-label">Step 1</p>
+        <h4>Name and Anonymity</h4>
         <label>
-          Upload Audio File
-          <input id="audio-upload-file" name="audio_upload_file" type="file" accept="audio/*">
+          <span class="field-label-line">Name <span class="field-required">required</span></span>
+          <input name="real_name" type="text" required placeholder="Stored in master database">
         </label>
-        <div class="recording-controls">
-          <span>Record Audio</span>
-          <div class="recording-buttons">
-            <button id="start-recording" type="button">Start Recording</button>
-            <button id="stop-recording" type="button" disabled>Stop Recording</button>
-          </div>
+        <label class="ppgis-popup-check">
+          <input name="is_anonymous" type="checkbox" checked>
+          Anonymous on the public map
+        </label>
+        <label>
+          <span class="field-label-line">Title <span class="field-required">required</span></span>
+          <input name="title" type="text" maxlength="120" required placeholder="Short title for this place">
+        </label>
+      </section>
+
+      <section class="form-step">
+        <p class="step-label">Step 2</p>
+        <h4>Choose What to Log</h4>
+        <div class="log-type-grid" aria-label="Choose log type">
+          <button class="log-type-card" type="button" data-log-type="text" aria-pressed="false">
+            <span class="log-type-icon log-type-text-icon" aria-hidden="true">Aa</span>
+            <span>Text</span>
+          </button>
+          <button class="log-type-card" type="button" data-log-type="photo" aria-pressed="false">
+            <span class="log-type-icon" aria-hidden="true">
+              <img src="img/camera.png" alt="">
+            </span>
+            <span>Photo</span>
+          </button>
+          <button class="log-type-card" type="button" data-log-type="audio" aria-pressed="false">
+            <span class="log-type-icon log-type-audio-icon" aria-hidden="true">REC</span>
+            <span>Audio</span>
+          </button>
         </div>
-      </div>
-      <p id="audio-status" class="media-status">No audio selected or recorded.</p>
-      <label class="checkbox-label">
-        <input type="checkbox" id="show-audio" name="show_audio">
-        Show my audio to other users
-      </label>
-      <button type="submit">Submit</button>
+      </section>
+
+      <section class="form-step">
+        <p class="step-label">Step 3</p>
+        <h4>Add and Save Content</h4>
+        <div id="text-log-panel" class="log-panel" hidden>
+          <label>
+            <span class="field-label-line">Text <span class="field-optional">optional</span></span>
+            <textarea id="text-log-draft" rows="4" placeholder="Describe this place or experience"></textarea>
+          </label>
+          <button id="save-text-log" class="save-log-button" type="button">Save Text</button>
+          <p id="text-status" class="media-status">No text saved.</p>
+        </div>
+
+        <div id="photo-log-panel" class="log-panel" hidden>
+          <span class="field-label-line">Photo <span class="field-optional">optional</span></span>
+          <div class="media-choice-grid">
+            <label class="media-action">
+              <input id="photo-upload-file" name="photo_upload_file" type="file" accept="image/*">
+              <span class="media-action-ui" aria-hidden="true">
+                <img class="media-action-icon" src="img/gallery.png" alt="">
+                <span>Go to Gallery</span>
+              </span>
+            </label>
+            <label class="media-action">
+              <input id="photo-capture-file" name="photo_capture_file" type="file" accept="image/*" capture="environment">
+              <span class="media-action-ui" aria-hidden="true">
+                <img class="media-action-icon" src="img/camera.png" alt="">
+                <span>Go to Camera</span>
+              </span>
+            </label>
+          </div>
+          <button id="save-photo-log" class="save-log-button" type="button">Save Photo</button>
+          <p id="photo-status" class="media-status">No photo selected.</p>
+        </div>
+
+        <div id="audio-log-panel" class="log-panel" hidden>
+          <span class="field-label-line">Audio <span class="field-optional">optional</span></span>
+          <div class="media-choice-grid">
+            <label>
+              Upload Audio File
+              <input id="audio-upload-file" name="audio_upload_file" type="file" accept="audio/*">
+            </label>
+            <div class="recording-controls">
+              <span>Record Audio</span>
+              <div class="recording-buttons">
+                <button id="start-recording" type="button">Start Recording</button>
+                <button id="stop-recording" type="button" disabled>Stop Recording</button>
+              </div>
+            </div>
+          </div>
+          <button id="save-audio-log" class="save-log-button" type="button">Save Audio</button>
+          <p id="audio-status" class="media-status">No audio selected or recorded.</p>
+        </div>
+      </section>
+
+      <section class="form-step">
+        <p class="step-label">Step 4</p>
+        <h4>Sharing</h4>
+        <label class="checkbox-label">
+          <input type="checkbox" id="share-public" name="share_public" checked>
+          Share this log publicly
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="show-photo" name="show_photo" checked>
+          Show my photo to other users
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="show-audio" name="show_audio">
+          Show my audio to other users
+        </label>
+      </section>
+
+      <section class="form-step">
+        <p class="step-label">Step 5</p>
+        <h4>Submit</h4>
+        <button type="submit">Submit Saved Log</button>
+      </section>
       <p class="popup-form-message"></p>
     </form>
   `);
+}
+
+function setLogPanel(type, active) {
+  const button = popover.querySelector(`[data-log-type="${type}"]`);
+  const panel = document.getElementById(`${type}-log-panel`);
+  if (button) {
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+  if (panel) {
+    panel.hidden = !active;
+    panel.classList.toggle("is-open", active);
+  }
+}
+
+function toggleLogType(type) {
+  const active = selectedLogTypes.has(type);
+
+  if (active) {
+    selectedLogTypes.delete(type);
+    if (type === "text") savedTextLog = null;
+    if (type === "photo") savedPhotoFile = null;
+    if (type === "audio") savedAudioFile = null;
+    setLogPanel(type, false);
+    return;
+  }
+
+  selectedLogTypes.add(type);
+  setLogPanel(type, true);
 }
 
 function clearDraftMarker() {
@@ -333,6 +428,46 @@ popover.addEventListener("click", (event) => {
     return;
   }
 
+  const logTypeButton = event.target.closest(".log-type-card");
+  if (logTypeButton) {
+    toggleLogType(logTypeButton.dataset.logType);
+    return;
+  }
+
+  if (event.target.closest("#save-text-log")) {
+    const textDraft = document.getElementById("text-log-draft");
+    const value = String(textDraft?.value || "").trim();
+    if (!value) {
+      setMediaStatus("text-status", "Add text before saving.", "recording");
+      return;
+    }
+    savedTextLog = value;
+    setMediaStatus("text-status", "Text saved.", "success");
+    return;
+  }
+
+  if (event.target.closest("#save-photo-log")) {
+    const file = selectedFileFromInput("photo-capture-file") || selectedFileFromInput("photo-upload-file");
+    if (!file) {
+      setMediaStatus("photo-status", "Choose or take a photo before saving.", "recording");
+      return;
+    }
+    savedPhotoFile = file;
+    setMediaStatus("photo-status", `Photo saved: ${file.name}`, "success");
+    return;
+  }
+
+  if (event.target.closest("#save-audio-log")) {
+    const file = recordedAudioFile || selectedFileFromInput("audio-upload-file");
+    if (!file) {
+      setMediaStatus("audio-status", "Upload or record audio before saving.", "recording");
+      return;
+    }
+    savedAudioFile = file;
+    setMediaStatus("audio-status", `Audio saved: ${file.name}`, "success");
+    return;
+  }
+
   if (event.target.closest("#start-recording")) {
     startAudioRecording();
     return;
@@ -346,15 +481,24 @@ popover.addEventListener("click", (event) => {
 popover.addEventListener("change", (event) => {
   if (event.target.matches("#photo-upload-file, #photo-capture-file")) {
     const file = event.target.files?.[0];
-    setMediaStatus("photo-status", file ? `Selected photo: ${file.name}` : "No photo selected.", file ? "success" : "");
+    savedPhotoFile = null;
+    setMediaStatus("photo-status", file ? `Selected photo: ${file.name}. Save Photo to include it.` : "No photo selected.", file ? "" : "");
   }
 
   if (event.target.matches("#audio-upload-file")) {
     const file = event.target.files?.[0];
     if (file) {
       recordedAudioFile = null;
+      savedAudioFile = null;
     }
-    setMediaStatus("audio-status", file ? `Selected audio: ${file.name}` : "No audio selected or recorded.", file ? "success" : "");
+    setMediaStatus("audio-status", file ? `Selected audio: ${file.name}. Save Audio to include it.` : "No audio selected or recorded.", file ? "" : "");
+  }
+});
+
+popover.addEventListener("input", (event) => {
+  if (event.target.matches("#text-log-draft")) {
+    savedTextLog = null;
+    setMediaStatus("text-status", "Draft changed. Save Text to include it.");
   }
 });
 
@@ -380,8 +524,9 @@ async function startAudioRecording() {
       const blob = new Blob(recordedAudioChunks, { type: mimeType });
       const extension = mimeType.includes("mp4") ? "m4a" : "webm";
       recordedAudioFile = new File([blob], `recorded-audio-${crypto.randomUUID()}.${extension}`, { type: mimeType });
+      savedAudioFile = null;
       stopActiveAudioStream();
-      setMediaStatus("audio-status", `Recorded audio ready: ${recordedAudioFile.name}`, "success");
+      setMediaStatus("audio-status", `Recorded audio ready: ${recordedAudioFile.name}. Save Audio to include it.`, "success");
       document.getElementById("start-recording").disabled = false;
       document.getElementById("stop-recording").disabled = true;
     });
@@ -411,22 +556,27 @@ popover.addEventListener("submit", async (submitEvent) => {
 
   const message = form.querySelector(".popup-form-message:last-child");
   const formData = new FormData(form);
-  const selectedPhoto = selectedFileFromInput("photo-capture-file") || selectedFileFromInput("photo-upload-file");
-  const selectedAudio = recordedAudioFile || selectedFileFromInput("audio-upload-file");
   const showPhoto = document.getElementById("show-photo").checked;
   const showAudio = document.getElementById("show-audio").checked;
+  const sharePublic = document.getElementById("share-public").checked;
+  const activeSavedText = selectedLogTypes.has("text") ? savedTextLog : null;
+  const activeSavedPhoto = selectedLogTypes.has("photo") ? savedPhotoFile : null;
+  const activeSavedAudio = selectedLogTypes.has("audio") ? savedAudioFile : null;
   const payload = {
     latitude: Number(form.dataset.lat),
     longitude: Number(form.dataset.lng),
     real_name: String(formData.get("real_name") || "").trim(),
     title: String(formData.get("title") || "").trim() || null,
-    body_text: String(formData.get("body_text") || "").trim() || null,
+    body_text: activeSavedText,
     is_anonymous: formData.get("is_anonymous") === "on",
     photo_path: null,
     audio_path: null,
     show_photo: showPhoto,
     show_audio: showAudio
   };
+  // TODO: Add `share_public: sharePublic` here after the submissions table
+  // has a matching boolean column. Keeping it out avoids breaking inserts now.
+  void sharePublic;
 
   if (!payload.real_name) {
     message.textContent = "Name is required for the master database.";
@@ -434,8 +584,38 @@ popover.addEventListener("submit", async (submitEvent) => {
     return;
   }
 
-  if (!payload.title || !payload.body_text) {
-    message.textContent = "Name, title, and contents are required.";
+  if (!payload.title) {
+    message.textContent = "Title is required.";
+    message.className = "popup-form-message error";
+    return;
+  }
+
+  if (!selectedLogTypes.size) {
+    message.textContent = "Choose at least one log type before submitting.";
+    message.className = "popup-form-message error";
+    return;
+  }
+
+  if (selectedLogTypes.has("text") && !activeSavedText) {
+    message.textContent = "Save your text before submitting.";
+    message.className = "popup-form-message error";
+    return;
+  }
+
+  if (selectedLogTypes.has("photo") && !activeSavedPhoto) {
+    message.textContent = "Save your photo before submitting.";
+    message.className = "popup-form-message error";
+    return;
+  }
+
+  if (selectedLogTypes.has("audio") && !activeSavedAudio) {
+    message.textContent = "Save your audio before submitting.";
+    message.className = "popup-form-message error";
+    return;
+  }
+
+  if (!activeSavedText && !activeSavedPhoto && !activeSavedAudio) {
+    message.textContent = "Save at least one log component before submitting.";
     message.className = "popup-form-message error";
     return;
   }
@@ -444,8 +624,8 @@ popover.addEventListener("submit", async (submitEvent) => {
   message.className = "popup-form-message";
 
   try {
-    payload.photo_path = await uploadMediaFile(selectedPhoto, "photos", MAX_PHOTO_BYTES);
-    payload.audio_path = await uploadMediaFile(selectedAudio, "audio", MAX_AUDIO_BYTES);
+    payload.photo_path = await uploadMediaFile(activeSavedPhoto, "photos", MAX_PHOTO_BYTES);
+    payload.audio_path = await uploadMediaFile(activeSavedAudio, "audio", MAX_AUDIO_BYTES);
   } catch {
     message.textContent = "Submission stopped because media upload failed.";
     message.className = "popup-form-message error";
