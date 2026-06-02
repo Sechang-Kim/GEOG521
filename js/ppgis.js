@@ -85,6 +85,15 @@ gpsControl.onAdd = () => {
   return container;
 };
 gpsControl.addTo(map);
+
+function setGpsControlPosition() {
+  const nextPosition = window.matchMedia("(max-width: 720px)").matches ? "bottomright" : "bottomleft";
+  if (gpsControl.getPosition() === nextPosition) return;
+  gpsControl.setPosition(nextPosition);
+}
+
+setGpsControlPosition();
+window.addEventListener("resize", setGpsControlPosition);
 let draftMarker = null;
 let recordedAudioFile = null;
 let mediaRecorder = null;
