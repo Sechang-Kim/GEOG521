@@ -1083,6 +1083,12 @@
   font-weight: 750;
 }
 
+.ppgis-edit-message.success,
+.ppgis-delete-message.success {
+  color: var(--accent-dark);
+  font-weight: 750;
+}
+
 .ppgis-popup-media {
   display: block;
   width: 100%;

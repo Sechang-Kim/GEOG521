@@ -95,6 +95,14 @@ function closePopover() {
   popover.innerHTML = "";
 }
 
+function closePublicPopoverAfterDelay(delayMs = 900) {
+  window.setTimeout(() => {
+    if (popover.querySelector(".ppgis-public-popup")) {
+      closePopover();
+    }
+  }, delayMs);
+}
+
 function resetSavedLogState() {
   selectedLogTypes = new Set();
   savedTextLog = null;
@@ -561,6 +569,8 @@ map.on("click", (event) => {
 
 popover.addEventListener("click", (event) => {
   if (event.target.closest(".ppgis-popover-close")) {
+    event.preventDefault();
+    event.stopPropagation();
     if (event.target.closest(".ppgis-popup-form")) {
       clearDraftMarker();
       setStatus("Selection cleared.");
@@ -881,32 +891,49 @@ async function handleDeleteSubmission(form) {
   const confirmed = window.confirm("Delete this log permanently?");
   if (!confirmed) return;
 
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton) submitButton.disabled = true;
   message.textContent = "Deleting log...";
   message.className = "ppgis-delete-message";
 
-  const { data, error } = await supabaseClient.functions.invoke("delete-ppgis-log", {
-    body: {
-      id: submissionId,
-      delete_password: deletePassword
-    }
-  });
+  let data;
+  let error;
+
+  try {
+    const result = await supabaseClient.functions.invoke("delete-ppgis-log", {
+      body: {
+        id: submissionId,
+        delete_password: deletePassword
+      }
+    });
+    data = result.data;
+    error = result.error;
+  } catch (invokeError) {
+    message.textContent = `Delete failed: ${invokeError.message || "Could not reach the delete function."}`;
+    message.className = "ppgis-delete-message error";
+    if (submitButton) submitButton.disabled = false;
+    return;
+  }
 
   if (error) {
     const errorMessage = await edgeFunctionErrorMessage(error);
     message.textContent = `Delete failed: ${errorMessage}`;
     message.className = "ppgis-delete-message error";
+    if (submitButton) submitButton.disabled = false;
     return;
   }
 
   if (data?.error) {
     message.textContent = `Delete failed: ${data.error}`;
     message.className = "ppgis-delete-message error";
+    if (submitButton) submitButton.disabled = false;
     return;
   }
 
-  alert("Log deleted.");
-  closePopover();
+  message.textContent = "Deleting complete. Updating map...";
+  message.className = "ppgis-delete-message success";
   await loadApprovedSubmissions();
+  closePublicPopoverAfterDelay();
 }
 
 async function handleEditSubmission(form) {
@@ -929,34 +956,51 @@ async function handleEditSubmission(form) {
     return;
   }
 
-  message.textContent = "Saving changes...";
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton) submitButton.disabled = true;
+  message.textContent = "Editing log...";
   message.className = "ppgis-edit-message";
 
-  const { data, error } = await supabaseClient.functions.invoke("edit-ppgis-log", {
-    body: {
-      id: submissionId,
-      delete_password: deletePassword,
-      title,
-      body_text: bodyText || null
-    }
-  });
+  let data;
+  let error;
+
+  try {
+    const result = await supabaseClient.functions.invoke("edit-ppgis-log", {
+      body: {
+        id: submissionId,
+        delete_password: deletePassword,
+        title,
+        body_text: bodyText || null
+      }
+    });
+    data = result.data;
+    error = result.error;
+  } catch (invokeError) {
+    message.textContent = `Edit failed: ${invokeError.message || "Could not reach the edit function."}`;
+    message.className = "ppgis-edit-message error";
+    if (submitButton) submitButton.disabled = false;
+    return;
+  }
 
   if (error) {
     const errorMessage = await edgeFunctionErrorMessage(error);
     message.textContent = `Edit failed: ${errorMessage}`;
     message.className = "ppgis-edit-message error";
+    if (submitButton) submitButton.disabled = false;
     return;
   }
 
   if (data?.error) {
     message.textContent = `Edit failed: ${data.error}`;
     message.className = "ppgis-edit-message error";
+    if (submitButton) submitButton.disabled = false;
     return;
   }
 
-  alert("Log updated.");
-  closePopover();
+  message.textContent = "Editing complete. Updating map...";
+  message.className = "ppgis-edit-message success";
   await loadApprovedSubmissions();
+  closePublicPopoverAfterDelay();
 }
 
 basemapSelect.addEventListener("change", (event) => {
