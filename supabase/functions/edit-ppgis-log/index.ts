@@ -1,23 +1,21 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const MEDIA_BUCKET = "ppgis-media";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
-type DeleteRequest = {
+type EditRequest = {
   id?: string | number;
   delete_password?: string;
+  title?: string | null;
+  body_text?: string | null;
 };
 
 type SubmissionSecret = {
   id: string | number;
-  photo_path: string | null;
-  audio_path: string | null;
   delete_password_salt: string | null;
   delete_password_hash: string | null;
 };
@@ -103,7 +101,7 @@ serve(async (req) => {
     return jsonResponse({ error: "Method not allowed." }, 405);
   }
 
-  let body: DeleteRequest;
+  let body: EditRequest;
   try {
     body = await req.json();
   } catch {
@@ -112,13 +110,19 @@ serve(async (req) => {
 
   const submissionId = cleanString(String(body.id || ""));
   const deletePassword = body.delete_password;
+  const title = cleanString(body.title);
+  const bodyText = cleanString(body.body_text);
 
   if (!submissionId) {
     return jsonResponse({ error: "Submission id is required." }, 400);
   }
 
   if (!isValidDeletePassword(deletePassword)) {
-    return jsonResponse({ error: "Delete password must be exactly 6 numeric digits." }, 400);
+    return jsonResponse({ error: "Edit password must be exactly 6 numeric digits." }, 400);
+  }
+
+  if (!title) {
+    return jsonResponse({ error: "Title is required." }, 400);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -136,7 +140,7 @@ serve(async (req) => {
 
   const { data, error: selectError } = await supabase
     .from("submissions")
-    .select("id, photo_path, audio_path, delete_password_salt, delete_password_hash")
+    .select("id, delete_password_salt, delete_password_hash")
     .eq("id", submissionId)
     .single();
   const submission = data as SubmissionSecret | null;
@@ -146,36 +150,28 @@ serve(async (req) => {
   }
 
   if (!submission.delete_password_salt || !submission.delete_password_hash) {
-    return jsonResponse({ error: "This submission cannot be deleted with a password." }, 403);
+    return jsonResponse({ error: "This submission cannot be edited with a password." }, 403);
   }
 
   const candidateHash = await hashDeletePassword(deletePassword, submission.delete_password_salt);
   if (!constantTimeEqual(candidateHash, submission.delete_password_hash)) {
-    return jsonResponse({ error: "Delete password is incorrect." }, 403);
+    return jsonResponse({ error: "Edit password is incorrect." }, 403);
   }
 
-  const mediaPaths = [submission.photo_path, submission.audio_path].filter((path): path is string => Boolean(path));
-  if (mediaPaths.length) {
-    const { error: storageError } = await supabase
-      .storage
-      .from(MEDIA_BUCKET)
-      .remove(mediaPaths);
-
-    if (storageError) {
-      console.error("Media delete error:", storageError);
-      return jsonResponse({ error: "Could not delete attached media." }, 500);
-    }
-  }
-
-  const { error: deleteError } = await supabase
+  const { data: updated, error: updateError } = await supabase
     .from("submissions")
-    .delete()
-    .eq("id", submissionId);
+    .update({
+      title,
+      body_text: bodyText
+    })
+    .eq("id", submissionId)
+    .select("id")
+    .single();
 
-  if (deleteError) {
-    console.error("Submission delete error:", deleteError);
-    return jsonResponse({ error: "Could not delete submission." }, 500);
+  if (updateError) {
+    console.error("Submission edit error:", updateError);
+    return jsonResponse({ error: "Could not update submission." }, 500);
   }
 
-  return jsonResponse({ success: true, id: submission.id });
+  return jsonResponse({ success: true, id: updated.id });
 });

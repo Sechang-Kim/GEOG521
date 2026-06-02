@@ -965,7 +965,15 @@
   border-top: 1px solid var(--line);
 }
 
+.ppgis-log-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ppgis-edit-toggle,
 .ppgis-delete-toggle,
+.ppgis-edit-form button,
 .ppgis-delete-form button {
   min-height: 36px;
   padding: 0 12px;
@@ -974,6 +982,19 @@
   font-size: 0.78rem;
   font-weight: 850;
   cursor: pointer;
+}
+
+.ppgis-edit-toggle {
+  width: fit-content;
+  color: var(--accent-dark);
+  background: var(--white);
+  border: 1px solid rgba(36, 122, 114, 0.42);
+}
+
+.ppgis-edit-toggle:hover,
+.ppgis-edit-toggle:focus-visible {
+  background: rgba(36, 122, 114, 0.08);
+  outline: none;
 }
 
 .ppgis-delete-toggle {
@@ -989,15 +1010,18 @@
   outline: none;
 }
 
+.ppgis-edit-form,
 .ppgis-delete-form {
   display: grid;
   gap: 8px;
 }
 
+.ppgis-edit-form[hidden],
 .ppgis-delete-form[hidden] {
   display: none;
 }
 
+.ppgis-edit-form label,
 .ppgis-delete-form label {
   display: grid;
   gap: 4px;
@@ -1006,12 +1030,31 @@
   font-weight: 800;
 }
 
+.ppgis-edit-form input,
+.ppgis-edit-form textarea,
 .ppgis-delete-form input {
   width: 100%;
   padding: 8px 9px;
   border: 1px solid var(--line);
   border-radius: 6px;
   font: inherit;
+}
+
+.ppgis-edit-form textarea {
+  resize: vertical;
+}
+
+.ppgis-edit-form button {
+  width: fit-content;
+  color: var(--white);
+  background: var(--accent);
+  border: 0;
+}
+
+.ppgis-edit-form button:hover,
+.ppgis-edit-form button:focus-visible {
+  background: var(--accent-dark);
+  outline: none;
 }
 
 .ppgis-delete-form button {
@@ -1027,12 +1070,14 @@
   outline: none;
 }
 
+.ppgis-edit-message,
 .ppgis-delete-message {
   margin: 0;
   color: var(--muted);
   font-size: 0.76rem;
 }
 
+.ppgis-edit-message.error,
 .ppgis-delete-message.error {
   color: #a33d3d;
   font-weight: 750;

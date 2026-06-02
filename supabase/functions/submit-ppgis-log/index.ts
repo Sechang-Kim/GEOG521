@@ -40,7 +40,7 @@ function cleanString(value: unknown) {
 }
 
 function isValidDeletePassword(value: unknown): value is string {
-  return typeof value === "string" && /^\d{4}$/.test(value);
+  return typeof value === "string" && /^\d{6}$/.test(value);
 }
 
 function bytesToBase64(bytes: Uint8Array) {
@@ -144,7 +144,7 @@ serve(async (req) => {
   }
 
   if (!isValidDeletePassword(deletePassword)) {
-    return jsonResponse({ error: "Delete password must be exactly 4 numeric digits." }, 400);
+    return jsonResponse({ error: "Edit/delete password must be exactly 6 numeric digits." }, 400);
   }
 
   try {

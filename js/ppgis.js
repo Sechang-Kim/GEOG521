@@ -120,11 +120,30 @@ function publicPanel(row) {
       ${photoHtml}
       ${audioHtml}
       <div class="ppgis-delete-log">
-        <button class="ppgis-delete-toggle" type="button" data-submission-id="${escapeHtml(row.id)}">Delete this log</button>
+        <div class="ppgis-log-actions">
+          <button class="ppgis-edit-toggle" type="button" data-submission-id="${escapeHtml(row.id)}">Edit this log</button>
+          <button class="ppgis-delete-toggle" type="button" data-submission-id="${escapeHtml(row.id)}">Delete this log</button>
+        </div>
+        <form class="ppgis-edit-form" data-submission-id="${escapeHtml(row.id)}" hidden>
+          <label>
+            <span class="field-label-line">Edit password <span class="field-required">required</span></span>
+            <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required placeholder="6 digits">
+          </label>
+          <label>
+            <span class="field-label-line">Title <span class="field-required">required</span></span>
+            <input name="title" type="text" maxlength="120" required value="${escapeHtml(row.title || "")}">
+          </label>
+          <label>
+            Story
+            <textarea name="body_text" rows="4">${escapeHtml(row.body_text || "")}</textarea>
+          </label>
+          <button type="submit">Save Changes</button>
+          <p class="ppgis-edit-message"></p>
+        </form>
         <form class="ppgis-delete-form" data-submission-id="${escapeHtml(row.id)}" hidden>
           <label>
             <span class="field-label-line">Delete password <span class="field-required">required</span></span>
-            <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" required placeholder="4 digits">
+            <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required placeholder="6 digits">
           </label>
           <button type="submit">Delete Log</button>
           <p class="ppgis-delete-message"></p>
@@ -179,7 +198,7 @@ async function edgeFunctionErrorMessage(error) {
 }
 
 function isValidDeletePassword(value) {
-  return /^\d{4}$/.test(String(value || ""));
+  return /^\d{6}$/.test(String(value || ""));
 }
 
 function showConsentDialog() {
@@ -351,9 +370,9 @@ function openSubmissionForm(lat, lng) {
         <p class="step-label">Step 5</p>
         <h4>Submit</h4>
         <label>
-          <span class="field-label-line">Delete password <span class="field-required">required</span></span>
-          <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" required autocomplete="new-password" placeholder="4 digits">
-          <span class="field-help">Use this 4-digit password if you want to delete this log later.</span>
+          <span class="field-label-line">Edit/Delete password <span class="field-required">required</span></span>
+          <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required autocomplete="new-password" placeholder="6 digits">
+          <span class="field-help">Use this 6-digit numeric password if you want to edit or delete this log later.</span>
         </label>
         <div class="ppgis-turnstile-wrap">
           <div id="ppgisTurnstile" class="cf-turnstile"></div>
@@ -553,8 +572,20 @@ popover.addEventListener("click", (event) => {
   }
 
   if (event.target.closest(".ppgis-delete-toggle")) {
-    const deleteForm = event.target.closest(".ppgis-delete-log")?.querySelector(".ppgis-delete-form");
+    const logTools = event.target.closest(".ppgis-delete-log");
+    const deleteForm = logTools?.querySelector(".ppgis-delete-form");
+    const editForm = logTools?.querySelector(".ppgis-edit-form");
+    if (editForm) editForm.hidden = true;
     if (deleteForm) deleteForm.hidden = !deleteForm.hidden;
+    return;
+  }
+
+  if (event.target.closest(".ppgis-edit-toggle")) {
+    const logTools = event.target.closest(".ppgis-delete-log");
+    const editForm = logTools?.querySelector(".ppgis-edit-form");
+    const deleteForm = logTools?.querySelector(".ppgis-delete-form");
+    if (deleteForm) deleteForm.hidden = true;
+    if (editForm) editForm.hidden = !editForm.hidden;
     return;
   }
 
@@ -673,6 +704,13 @@ function stopAudioRecording() {
 }
 
 popover.addEventListener("submit", async (submitEvent) => {
+  const editForm = submitEvent.target.closest(".ppgis-edit-form");
+  if (editForm) {
+    submitEvent.preventDefault();
+    await handleEditSubmission(editForm);
+    return;
+  }
+
   const deleteForm = submitEvent.target.closest(".ppgis-delete-form");
   if (deleteForm) {
     submitEvent.preventDefault();
@@ -722,7 +760,7 @@ popover.addEventListener("submit", async (submitEvent) => {
   }
 
   if (!isValidDeletePassword(deletePassword)) {
-    message.textContent = "Delete password must be exactly 4 numeric digits.";
+    message.textContent = "Edit/delete password must be exactly 6 numeric digits.";
     message.className = "popup-form-message error";
     return;
   }
@@ -828,7 +866,7 @@ async function handleDeleteSubmission(form) {
   const submissionId = form.dataset.submissionId;
 
   if (!isValidDeletePassword(deletePassword)) {
-    message.textContent = "Enter the 4-digit delete password.";
+    message.textContent = "Enter the 6-digit delete password.";
     message.className = "ppgis-delete-message error";
     return;
   }
@@ -860,6 +898,56 @@ async function handleDeleteSubmission(form) {
   }
 
   alert("Log deleted.");
+  closePopover();
+  await loadApprovedSubmissions();
+}
+
+async function handleEditSubmission(form) {
+  const message = form.querySelector(".ppgis-edit-message");
+  const formData = new FormData(form);
+  const deletePassword = String(formData.get("delete_password") || "");
+  const title = String(formData.get("title") || "").trim();
+  const bodyText = String(formData.get("body_text") || "").trim();
+  const submissionId = form.dataset.submissionId;
+
+  if (!isValidDeletePassword(deletePassword)) {
+    message.textContent = "Enter the 6-digit edit password.";
+    message.className = "ppgis-edit-message error";
+    return;
+  }
+
+  if (!title) {
+    message.textContent = "Title is required.";
+    message.className = "ppgis-edit-message error";
+    return;
+  }
+
+  message.textContent = "Saving changes...";
+  message.className = "ppgis-edit-message";
+
+  const { data, error } = await supabaseClient.functions.invoke("edit-ppgis-log", {
+    body: {
+      id: submissionId,
+      delete_password: deletePassword,
+      title,
+      body_text: bodyText || null
+    }
+  });
+
+  if (error) {
+    const errorMessage = await edgeFunctionErrorMessage(error);
+    message.textContent = `Edit failed: ${errorMessage}`;
+    message.className = "ppgis-edit-message error";
+    return;
+  }
+
+  if (data?.error) {
+    message.textContent = `Edit failed: ${data.error}`;
+    message.className = "ppgis-edit-message error";
+    return;
+  }
+
+  alert("Log updated.");
   closePopover();
   await loadApprovedSubmissions();
 }
