@@ -830,6 +830,96 @@
   font-weight: 750;
 }
 
+.ppgis-turnstile-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ppgis-turnstile-wrap .cf-turnstile {
+  min-height: 65px;
+}
+
+.ppgis-consent-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(16, 35, 49, 0.52);
+}
+
+.ppgis-consent-dialog {
+  width: min(560px, 100%);
+  max-height: min(720px, calc(100vh - 40px));
+  overflow-y: auto;
+  padding: 22px;
+  color: var(--text);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 26px 70px rgba(16, 35, 49, 0.28);
+}
+
+.ppgis-consent-dialog h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.22rem;
+  line-height: 1.2;
+}
+
+.ppgis-consent-copy {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 18px;
+}
+
+.ppgis-consent-copy p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.48;
+}
+
+.ppgis-consent-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.ppgis-consent-actions button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.ppgis-consent-agree {
+  color: var(--white);
+  background: var(--accent);
+  border: 0;
+}
+
+.ppgis-consent-agree:hover,
+.ppgis-consent-agree:focus-visible {
+  background: var(--accent-dark);
+  outline: none;
+}
+
+.ppgis-consent-decline {
+  color: #a33d3d;
+  background: var(--white);
+  border: 1px solid rgba(163, 61, 61, 0.42);
+}
+
+.ppgis-consent-decline:hover,
+.ppgis-consent-decline:focus-visible {
+  background: rgba(163, 61, 61, 0.08);
+  outline: none;
+}
+
 .ppgis-public-popup {
   max-width: 100%;
   padding-right: 28px;

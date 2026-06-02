@@ -3,6 +3,7 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2JgXPdRqSLmQ1YYKFUp7iA_rndlY_Jr
 const MEDIA_BUCKET = "ppgis-media";
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
+const TURNSTILE_SITE_KEY = "0x4AAAAAADdPqMVnjCWpuPM3";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
@@ -65,6 +66,7 @@ let selectedLogTypes = new Set();
 let savedTextLog = null;
 let savedPhotoFile = null;
 let savedAudioFile = null;
+let turnstileWidgetId = null;
 
 function setStatus(message, type = "") {
   statusEl.textContent = message;
@@ -86,6 +88,7 @@ function openPopover(html) {
 }
 
 function closePopover() {
+  resetTurnstileWidget();
   resetRecordingState();
   resetSavedLogState();
   popover.classList.remove("is-open");
@@ -118,6 +121,94 @@ function publicPanel(row) {
       ${audioHtml}
     </article>
   `);
+}
+
+function renderTurnstileWidget() {
+  const container = document.getElementById("ppgisTurnstile");
+  if (!container) return;
+
+  if (!window.turnstile) {
+    window.setTimeout(renderTurnstileWidget, 250);
+    return;
+  }
+
+  if (turnstileWidgetId !== null) {
+    window.turnstile.remove(turnstileWidgetId);
+    turnstileWidgetId = null;
+  }
+
+  turnstileWidgetId = window.turnstile.render(container, {
+    sitekey: TURNSTILE_SITE_KEY,
+    theme: "light",
+    size: "normal"
+  });
+}
+
+function getTurnstileToken() {
+  if (!window.turnstile || turnstileWidgetId === null) return "";
+  return window.turnstile.getResponse(turnstileWidgetId);
+}
+
+function resetTurnstileWidget() {
+  if (!window.turnstile || turnstileWidgetId === null) return;
+  window.turnstile.reset(turnstileWidgetId);
+}
+
+async function edgeFunctionErrorMessage(error) {
+  if (!error) return "Unknown Edge Function error.";
+
+  try {
+    const errorBody = await error.context?.json?.();
+    if (errorBody?.error) return errorBody.error;
+  } catch {
+    // Fall back to the Supabase client error message below.
+  }
+
+  return error.message || "Unknown Edge Function error.";
+}
+
+function showConsentDialog() {
+  return new Promise((resolve) => {
+    const existing = document.querySelector(".ppgis-consent-overlay");
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "ppgis-consent-overlay";
+    overlay.setAttribute("role", "presentation");
+    overlay.innerHTML = `
+      <section class="ppgis-consent-dialog" role="dialog" aria-modal="true" aria-labelledby="ppgisConsentTitle">
+        <h3 id="ppgisConsentTitle">Consent to Submit Your Data</h3>
+        <div class="ppgis-consent-copy">
+          <p>
+            This form collects your name, photo, story, voice/audio, text, and volunteered geographic information for this PPGIS research project.
+          </p>
+          <p>
+            You may choose whether your post is visible to other visitors. Even if it is hidden from public display, the submitted data will be stored in the master database owned and administered by Sechang Kim. Contact: vs5345@uw.edu.
+          </p>
+          <p>
+            Data is protected by Supabase security settings and will not be used for commercial or unrelated purposes. Your consent is voluntary, specific to this submission, informed by these terms, and shown by selecting the agreement button below.
+          </p>
+        </div>
+        <div class="ppgis-consent-actions">
+          <button class="ppgis-consent-agree" type="button">I have read and agree to submit my data</button>
+          <button class="ppgis-consent-decline" type="button">I read but do not agree with the terms</button>
+        </div>
+      </section>
+    `;
+
+    document.body.append(overlay);
+    const agreeButton = overlay.querySelector(".ppgis-consent-agree");
+    const declineButton = overlay.querySelector(".ppgis-consent-decline");
+
+    function close(agreed) {
+      overlay.remove();
+      resolve(agreed);
+    }
+
+    agreeButton.addEventListener("click", () => close(true));
+    declineButton.addEventListener("click", () => close(false));
+    agreeButton.focus();
+  });
 }
 
 function openSubmissionForm(lat, lng) {
@@ -241,11 +332,15 @@ function openSubmissionForm(lat, lng) {
       <section class="form-step">
         <p class="step-label">Step 5</p>
         <h4>Submit</h4>
+        <div class="ppgis-turnstile-wrap">
+          <div id="ppgisTurnstile" class="cf-turnstile"></div>
+        </div>
         <button type="submit">Submit Saved Log</button>
       </section>
       <p class="popup-form-message"></p>
     </form>
   `);
+  renderTurnstileWidget();
 }
 
 function setLogPanel(type, active) {
@@ -574,9 +669,8 @@ popover.addEventListener("submit", async (submitEvent) => {
     show_photo: showPhoto,
     show_audio: showAudio
   };
-  // TODO: Add `share_public: sharePublic` here after the submissions table
-  // has a matching boolean column. Keeping it out avoids breaking inserts now.
-  void sharePublic;
+  // `share_public` is sent to the Edge Function for future schema support, but
+  // the function keeps it out of the insert until the table has that column.
 
   if (!payload.real_name) {
     message.textContent = "Name is required for the master database.";
@@ -620,6 +714,22 @@ popover.addEventListener("submit", async (submitEvent) => {
     return;
   }
 
+  const turnstileToken = getTurnstileToken();
+  if (!turnstileToken) {
+    alert("Please complete the verification before submitting.");
+    message.textContent = "Complete the verification before submitting.";
+    message.className = "popup-form-message error";
+    return;
+  }
+
+  const consentGranted = await showConsentDialog();
+  if (!consentGranted) {
+    message.textContent = "You can continue viewing the map, but you cannot submit data unless you agree to the consent terms.";
+    message.className = "popup-form-message error";
+    resetTurnstileWidget();
+    return;
+  }
+
   message.textContent = "Uploading media and submitting...";
   message.className = "popup-form-message";
 
@@ -632,18 +742,34 @@ popover.addEventListener("submit", async (submitEvent) => {
     return;
   }
 
-  const { error } = await supabaseClient
-    .from("submissions")
-    .insert(payload);
+  const functionPayload = {
+    turnstileToken,
+    ...payload,
+    share_public: sharePublic
+  };
+
+  const { data, error } = await supabaseClient.functions.invoke("submit-ppgis-log", {
+    body: functionPayload
+  });
 
   if (error) {
-    message.textContent = `Submission failed: ${error.message}`;
+    const errorMessage = await edgeFunctionErrorMessage(error);
+    message.textContent = `Submission failed: ${errorMessage}`;
     message.className = "popup-form-message error";
+    resetTurnstileWidget();
+    return;
+  }
+
+  if (data?.error) {
+    message.textContent = `Submission failed: ${data.error}`;
+    message.className = "popup-form-message error";
+    resetTurnstileWidget();
     return;
   }
 
   alert("Submission received. It is now visible on the map.");
   form.reset();
+  resetTurnstileWidget();
   message.textContent = "Submission received. Reloading map...";
   message.className = "popup-form-message success";
   clearDraftMarker();
