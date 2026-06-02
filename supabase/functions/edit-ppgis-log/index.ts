@@ -13,6 +13,7 @@ type EditRequest = {
   title?: string | null;
   body_text?: string | null;
   marker_color?: string | null;
+  show_text?: boolean;
 };
 
 const defaultMarkerColor = "#ff7f00";
@@ -134,6 +135,7 @@ serve(async (req) => {
   const title = cleanString(body.title);
   const bodyText = cleanString(body.body_text);
   const markerColor = validMarkerColor(body.marker_color);
+  const showText = Boolean(body.show_text);
 
   if (!submissionId) {
     return jsonResponse({ error: "Submission id is required." }, 400);
@@ -185,7 +187,8 @@ serve(async (req) => {
     .update({
       title,
       body_text: bodyText,
-      marker_color: markerColor
+      marker_color: markerColor,
+      show_text: showText
     })
     .eq("id", submissionId)
     .select("id")

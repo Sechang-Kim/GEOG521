@@ -503,6 +503,36 @@
   outline: none;
 }
 
+.ppgis-gps-control {
+  margin-left: 10px !important;
+  margin-bottom: 22px !important;
+  border: 0 !important;
+  box-shadow: 0 8px 22px rgba(16, 35, 49, 0.22);
+}
+
+.ppgis-gps-button {
+  width: 44px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  background: var(--accent);
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.ppgis-gps-button:hover,
+.ppgis-gps-button:focus-visible {
+  background: var(--accent-dark);
+  outline: none;
+}
+
 .ppgis-status {
   margin: 12px 0 0 !important;
   color: var(--muted) !important;
@@ -873,12 +903,13 @@
 }
 
 .ppgis-turnstile-wrap {
-  width: 100%;
-  overflow-x: auto;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .ppgis-turnstile-wrap .cf-turnstile {
-  min-height: 65px;
+  min-height: 140px;
 }
 
 .ppgis-consent-overlay {

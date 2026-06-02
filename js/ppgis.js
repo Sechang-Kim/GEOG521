@@ -70,6 +70,21 @@ const baseLayers = {
 baseLayers.osm.addTo(map);
 
 const approvedLayer = L.featureGroup().addTo(map);
+const gpsControl = L.control({ position: "bottomleft" });
+gpsControl.onAdd = () => {
+  const container = L.DomUtil.create("div", "ppgis-gps-control leaflet-bar");
+  const button = L.DomUtil.create("button", "ppgis-gps-button", container);
+  button.type = "button";
+  button.title = "Use current location";
+  button.setAttribute("aria-label", "Use current location");
+  button.textContent = "GPS";
+
+  L.DomEvent.disableClickPropagation(container);
+  L.DomEvent.on(button, "click", locateUser);
+
+  return container;
+};
+gpsControl.addTo(map);
 let draftMarker = null;
 let recordedAudioFile = null;
 let mediaRecorder = null;
@@ -80,10 +95,73 @@ let savedTextLog = null;
 let savedPhotoFile = null;
 let savedAudioFile = null;
 let turnstileWidgetId = null;
+let userLocationMarker = null;
+let userLocationAccuracy = null;
 
 function setStatus(message, type = "") {
   statusEl.textContent = message;
   statusEl.className = `ppgis-status ${type}`.trim();
+}
+
+function locateUser() {
+  if (!navigator.geolocation) {
+    alert("This browser does not support location services.");
+    return;
+  }
+
+  const confirmed = window.confirm("Allow this site to use your current location?");
+  if (!confirmed) return;
+
+  setStatus("Requesting your current location...");
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const { latitude, longitude, accuracy } = position.coords;
+      const latLng = [latitude, longitude];
+
+      if (!userLocationMarker) {
+        userLocationMarker = L.circleMarker(latLng, {
+          radius: 8,
+          color: "#1f78b4",
+          fillColor: "#1f78b4",
+          fillOpacity: 0.9,
+          weight: 3,
+          bubblingMouseEvents: false
+        }).addTo(map);
+      } else {
+        userLocationMarker.setLatLng(latLng);
+      }
+
+      if (!userLocationAccuracy) {
+        userLocationAccuracy = L.circle(latLng, {
+          radius: accuracy,
+          color: "#1f78b4",
+          fillColor: "#a6cee3",
+          fillOpacity: 0.16,
+          weight: 1,
+          interactive: false
+        }).addTo(map);
+      } else {
+        userLocationAccuracy.setLatLng(latLng);
+        userLocationAccuracy.setRadius(accuracy);
+      }
+
+      userLocationMarker.bindPopup("Your current location").openPopup();
+      map.setView(latLng, Math.max(map.getZoom(), 15));
+      setStatus("Current location found.");
+    },
+    (error) => {
+      const message = error.code === error.PERMISSION_DENIED
+        ? "Location permission was denied."
+        : "Could not find your current location.";
+      setStatus(message, "error");
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 30000
+    }
+  );
 }
 
 function escapeHtml(value) {
@@ -173,6 +251,10 @@ function publicPanel(row) {
             Marker color
             ${markerColorPalette(row.marker_color || DEFAULT_MARKER_COLOR)}
           </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="show_text" ${row.show_text === false ? "" : "checked"}>
+            Show my text to other users
+          </label>
           <label>
             Story
             <textarea name="body_text" rows="4">${escapeHtml(row.body_text || "")}</textarea>
@@ -210,7 +292,7 @@ function renderTurnstileWidget() {
   turnstileWidgetId = window.turnstile.render(container, {
     sitekey: TURNSTILE_SITE_KEY,
     theme: "light",
-    size: "normal"
+    size: "compact"
   });
 }
 
@@ -324,7 +406,7 @@ function openSubmissionForm(lat, lng) {
 
       <section class="form-step">
         <p class="step-label">Step 2</p>
-        <h4>Choose What to Log</h4>
+        <h4>Choose What to Log <span class="field-optional">multiple selections allowed</span></h4>
         <div class="log-type-grid" aria-label="Choose log type">
           <button class="log-type-card" type="button" data-log-type="text" aria-pressed="false">
             <span class="log-type-icon log-type-text-icon" aria-hidden="true">Aa</span>
@@ -409,6 +491,10 @@ function openSubmissionForm(lat, lng) {
           Share this log publicly
         </label>
         <label class="checkbox-label">
+          <input type="checkbox" id="show-text" name="show_text" checked>
+          Show my text to other users
+        </label>
+        <label class="checkbox-label">
           <input type="checkbox" id="show-photo" name="show_photo" checked>
           Show my photo to other users
         </label>
@@ -416,6 +502,7 @@ function openSubmissionForm(lat, lng) {
           <input type="checkbox" id="show-audio" name="show_audio">
           Show my audio to other users
         </label>
+        <p class="field-help">If the log, location, text, photo, or audio is not shared publicly, only the administrator can view that saved data.</p>
       </section>
 
       <section class="form-step">
@@ -553,7 +640,7 @@ async function loadApprovedSubmissions() {
 
   const { data, error } = await supabaseClient
     .from("public_submissions")
-    .select("id, latitude, longitude, title, body_text, display_name, photo_path, audio_path, marker_color");
+    .select("id, latitude, longitude, title, body_text, display_name, photo_path, audio_path, marker_color, show_text");
 
   if (error) {
     setStatus(`Could not load approved submissions: ${error.message}`, "error");
@@ -781,6 +868,7 @@ popover.addEventListener("submit", async (submitEvent) => {
   const formData = new FormData(form);
   const showPhoto = document.getElementById("show-photo").checked;
   const showAudio = document.getElementById("show-audio").checked;
+  const showText = document.getElementById("show-text").checked;
   const sharePublic = document.getElementById("share-public").checked;
   const deletePassword = String(formData.get("delete_password") || "");
   const markerColor = validMarkerColor(formData.get("marker_color"));
@@ -796,6 +884,7 @@ popover.addEventListener("submit", async (submitEvent) => {
     is_anonymous: formData.get("is_anonymous") === "on",
     photo_path: null,
     audio_path: null,
+    show_text: showText,
     show_photo: showPhoto,
     show_audio: showAudio,
     marker_color: markerColor
@@ -986,6 +1075,7 @@ async function handleEditSubmission(form) {
   const title = String(formData.get("title") || "").trim();
   const bodyText = String(formData.get("body_text") || "").trim();
   const markerColor = validMarkerColor(formData.get("marker_color"));
+  const showText = formData.get("show_text") === "on";
   const submissionId = form.dataset.submissionId;
 
   if (!isValidDeletePassword(deletePassword)) {
@@ -1015,7 +1105,8 @@ async function handleEditSubmission(form) {
       delete_password: deletePassword,
       title,
       body_text: bodyText || null,
-      marker_color: markerColor
+      marker_color: markerColor,
+      show_text: showText
     }
   });
     data = result.data;

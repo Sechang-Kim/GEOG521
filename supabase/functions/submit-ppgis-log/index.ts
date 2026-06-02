@@ -17,6 +17,7 @@ type SubmissionRequest = {
   body_text?: string | null;
   photo_path?: string | null;
   audio_path?: string | null;
+  show_text?: boolean;
   show_photo?: boolean;
   show_audio?: boolean;
   share_public?: boolean;
@@ -209,6 +210,7 @@ serve(async (req) => {
     is_anonymous: Boolean(body.is_anonymous),
     photo_path: cleanString(body.photo_path),
     audio_path: cleanString(body.audio_path),
+    show_text: Boolean(body.show_text),
     show_photo: Boolean(body.show_photo),
     show_audio: Boolean(body.show_audio),
     marker_color: validMarkerColor(body.marker_color),
