@@ -483,6 +483,7 @@
 }
 
 #ppgisRefresh,
+.ppgis-location-tool button,
 .ppgis-popup-form button {
   min-height: 40px;
   padding: 0 14px;
@@ -497,40 +498,48 @@
 
 #ppgisRefresh:hover,
 #ppgisRefresh:focus-visible,
+.ppgis-location-tool button:hover,
+.ppgis-location-tool button:focus-visible,
 .ppgis-popup-form button:hover,
 .ppgis-popup-form button:focus-visible {
   background: var(--accent-dark);
   outline: none;
 }
 
-.ppgis-gps-control {
-  margin-left: 10px !important;
-  margin-bottom: 22px !important;
-  border: 0 !important;
-  box-shadow: 0 8px 22px rgba(16, 35, 49, 0.22);
+.ppgis-location-tool {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
 
-.ppgis-gps-button {
-  width: 44px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--white);
-  background: var(--accent);
-  border: 0;
-  border-radius: 6px;
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0;
-  cursor: pointer;
+.ppgis-location-tool button {
+  width: 100%;
 }
 
-.ppgis-gps-button:hover,
-.ppgis-gps-button:focus-visible {
-  background: var(--accent-dark);
-  outline: none;
+.ppgis-location-tool button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.ppgis-location-status {
+  margin: 0 !important;
+  color: var(--muted) !important;
+  font-size: 0.78rem !important;
+  line-height: 1.32;
+}
+
+.ppgis-location-status.success {
+  color: var(--accent-dark) !important;
+  font-weight: 750;
+}
+
+.ppgis-location-status.error {
+  color: #a33d3d !important;
+  font-weight: 750;
 }
 
 .ppgis-status {
@@ -1237,12 +1246,6 @@
     max-height: 54vh;
     padding: 16px;
     margin: 0;
-  }
-
-  .ppgis-gps-control {
-    margin-left: 0 !important;
-    margin-right: 12px !important;
-    margin-bottom: 96px !important;
   }
 
   .ppgis-full-map {

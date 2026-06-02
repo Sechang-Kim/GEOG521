@@ -25,6 +25,8 @@ const navMenu = document.querySelector(".nav-menu");
 const statusEl = document.getElementById("ppgisStatus");
 const basemapSelect = document.getElementById("ppgisBasemap");
 const refreshButton = document.getElementById("ppgisRefresh");
+const locateButton = document.getElementById("ppgisLocate");
+const locationStatusEl = document.getElementById("ppgisLocationStatus");
 const popover = document.getElementById("ppgisPopover");
 const ppgisShell = document.querySelector(".ppgis-popup-shell");
 const panelToggle = document.querySelector(".ppgis-panel-toggle");
@@ -45,6 +47,7 @@ function setInfoPanel(open) {
 
 panelToggle.addEventListener("click", () => setInfoPanel(false));
 panelTab.addEventListener("click", () => setInfoPanel(true));
+locateButton.addEventListener("click", locateUser);
 
 const map = L.map("ppgisPopupMap", {
   center: [47.61, -122.33],
@@ -70,30 +73,6 @@ const baseLayers = {
 baseLayers.osm.addTo(map);
 
 const approvedLayer = L.featureGroup().addTo(map);
-const gpsControl = L.control({ position: "bottomleft" });
-gpsControl.onAdd = () => {
-  const container = L.DomUtil.create("div", "ppgis-gps-control leaflet-bar");
-  const button = L.DomUtil.create("button", "ppgis-gps-button", container);
-  button.type = "button";
-  button.title = "Use current location";
-  button.setAttribute("aria-label", "Use current location");
-  button.textContent = "GPS";
-
-  L.DomEvent.disableClickPropagation(container);
-  L.DomEvent.on(button, "click", locateUser);
-
-  return container;
-};
-gpsControl.addTo(map);
-
-function setGpsControlPosition() {
-  const nextPosition = window.matchMedia("(max-width: 720px)").matches ? "bottomright" : "bottomleft";
-  if (gpsControl.getPosition() === nextPosition) return;
-  gpsControl.setPosition(nextPosition);
-}
-
-setGpsControlPosition();
-window.addEventListener("resize", setGpsControlPosition);
 let draftMarker = null;
 let recordedAudioFile = null;
 let mediaRecorder = null;
@@ -112,16 +91,22 @@ function setStatus(message, type = "") {
   statusEl.className = `ppgis-status ${type}`.trim();
 }
 
+function setLocationStatus(message, type = "") {
+  locationStatusEl.textContent = message;
+  locationStatusEl.className = `ppgis-location-status ${type}`.trim();
+}
+
 function locateUser() {
   if (!navigator.geolocation) {
-    alert("This browser does not support location services.");
+    setLocationStatus("This browser does not support location services.", "error");
     return;
   }
 
   const confirmed = window.confirm("Allow this site to use your current location?");
   if (!confirmed) return;
 
-  setStatus("Requesting your current location...");
+  locateButton.disabled = true;
+  setLocationStatus("Requesting your location...");
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
@@ -157,13 +142,15 @@ function locateUser() {
 
       userLocationMarker.bindPopup("Your current location").openPopup();
       map.setView(latLng, Math.max(map.getZoom(), 15));
-      setStatus("Current location found.");
+      setLocationStatus("Location found and shown on the map.", "success");
+      locateButton.disabled = false;
     },
     (error) => {
       const message = error.code === error.PERMISSION_DENIED
         ? "Location permission was denied."
         : "Could not find your current location.";
-      setStatus(message, "error");
+      setLocationStatus(message, "error");
+      locateButton.disabled = false;
     },
     {
       enableHighAccuracy: true,
