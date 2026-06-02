@@ -95,14 +95,6 @@ function closePopover() {
   popover.innerHTML = "";
 }
 
-function closePublicPopoverAfterDelay(delayMs = 900) {
-  window.setTimeout(() => {
-    if (popover.querySelector(".ppgis-public-popup")) {
-      closePopover();
-    }
-  }, delayMs);
-}
-
 function resetSavedLogState() {
   selectedLogTypes = new Set();
   savedTextLog = null;
@@ -189,7 +181,11 @@ function getTurnstileToken() {
 
 function resetTurnstileWidget() {
   if (!window.turnstile || turnstileWidgetId === null) return;
-  window.turnstile.reset(turnstileWidgetId);
+  try {
+    window.turnstile.reset(turnstileWidgetId);
+  } catch {
+    turnstileWidgetId = null;
+  }
 }
 
 async function edgeFunctionErrorMessage(error) {
@@ -893,7 +889,7 @@ async function handleDeleteSubmission(form) {
 
   const submitButton = form.querySelector('button[type="submit"]');
   if (submitButton) submitButton.disabled = true;
-  message.textContent = "Deleting log...";
+  message.textContent = "Deleting and updating map...";
   message.className = "ppgis-delete-message";
 
   let data;
@@ -930,10 +926,11 @@ async function handleDeleteSubmission(form) {
     return;
   }
 
-  message.textContent = "Deleting complete. Updating map...";
+  message.textContent = "Deleting and updating map...";
   message.className = "ppgis-delete-message success";
   await loadApprovedSubmissions();
-  closePublicPopoverAfterDelay();
+  message.textContent = "Deleting Complete";
+  if (submitButton) submitButton.disabled = false;
 }
 
 async function handleEditSubmission(form) {
@@ -958,7 +955,7 @@ async function handleEditSubmission(form) {
 
   const submitButton = form.querySelector('button[type="submit"]');
   if (submitButton) submitButton.disabled = true;
-  message.textContent = "Editing log...";
+  message.textContent = "Editing and updating map...";
   message.className = "ppgis-edit-message";
 
   let data;
@@ -997,10 +994,11 @@ async function handleEditSubmission(form) {
     return;
   }
 
-  message.textContent = "Editing complete. Updating map...";
+  message.textContent = "Editing and updating map...";
   message.className = "ppgis-edit-message success";
   await loadApprovedSubmissions();
-  closePublicPopoverAfterDelay();
+  message.textContent = "Editing Complete";
+  if (submitButton) submitButton.disabled = false;
 }
 
 basemapSelect.addEventListener("change", (event) => {
