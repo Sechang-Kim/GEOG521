@@ -292,7 +292,7 @@ function renderTurnstileWidget() {
   turnstileWidgetId = window.turnstile.render(container, {
     sitekey: TURNSTILE_SITE_KEY,
     theme: "light",
-    size: "compact"
+    size: "flexible"
   });
 }
 

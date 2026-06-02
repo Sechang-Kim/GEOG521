@@ -903,13 +903,13 @@
 }
 
 .ppgis-turnstile-wrap {
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
   overflow: hidden;
 }
 
 .ppgis-turnstile-wrap .cf-turnstile {
-  min-height: 140px;
+  min-height: 65px;
 }
 
 .ppgis-consent-overlay {
