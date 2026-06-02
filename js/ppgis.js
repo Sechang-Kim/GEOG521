@@ -119,6 +119,17 @@ function publicPanel(row) {
       <p><strong>Submitted by:</strong> ${escapeHtml(row.display_name || "Anonymous")}</p>
       ${photoHtml}
       ${audioHtml}
+      <div class="ppgis-delete-log">
+        <button class="ppgis-delete-toggle" type="button" data-submission-id="${escapeHtml(row.id)}">Delete this log</button>
+        <form class="ppgis-delete-form" data-submission-id="${escapeHtml(row.id)}" hidden>
+          <label>
+            <span class="field-label-line">Delete password <span class="field-required">required</span></span>
+            <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" required placeholder="4 digits">
+          </label>
+          <button type="submit">Delete Log</button>
+          <p class="ppgis-delete-message"></p>
+        </form>
+      </div>
     </article>
   `);
 }
@@ -167,6 +178,10 @@ async function edgeFunctionErrorMessage(error) {
   return error.message || "Unknown Edge Function error.";
 }
 
+function isValidDeletePassword(value) {
+  return /^\d{4}$/.test(String(value || ""));
+}
+
 function showConsentDialog() {
   return new Promise((resolve) => {
     const existing = document.querySelector(".ppgis-consent-overlay");
@@ -177,6 +192,7 @@ function showConsentDialog() {
     overlay.setAttribute("role", "presentation");
     overlay.innerHTML = `
       <section class="ppgis-consent-dialog" role="dialog" aria-modal="true" aria-labelledby="ppgisConsentTitle">
+        <button class="ppgis-consent-close" type="button" aria-label="Close consent window">&times;</button>
         <h3 id="ppgisConsentTitle">Consent to Submit Your Data</h3>
         <div class="ppgis-consent-copy">
           <p>
@@ -197,6 +213,7 @@ function showConsentDialog() {
     `;
 
     document.body.append(overlay);
+    const closeButton = overlay.querySelector(".ppgis-consent-close");
     const agreeButton = overlay.querySelector(".ppgis-consent-agree");
     const declineButton = overlay.querySelector(".ppgis-consent-decline");
 
@@ -205,6 +222,7 @@ function showConsentDialog() {
       resolve(agreed);
     }
 
+    closeButton.addEventListener("click", () => close(false));
     agreeButton.addEventListener("click", () => close(true));
     declineButton.addEventListener("click", () => close(false));
     agreeButton.focus();
@@ -332,6 +350,11 @@ function openSubmissionForm(lat, lng) {
       <section class="form-step">
         <p class="step-label">Step 5</p>
         <h4>Submit</h4>
+        <label>
+          <span class="field-label-line">Delete password <span class="field-required">required</span></span>
+          <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" required autocomplete="new-password" placeholder="4 digits">
+          <span class="field-help">Use this 4-digit password if you want to delete this log later.</span>
+        </label>
         <div class="ppgis-turnstile-wrap">
           <div id="ppgisTurnstile" class="cf-turnstile"></div>
         </div>
@@ -529,6 +552,12 @@ popover.addEventListener("click", (event) => {
     return;
   }
 
+  if (event.target.closest(".ppgis-delete-toggle")) {
+    const deleteForm = event.target.closest(".ppgis-delete-log")?.querySelector(".ppgis-delete-form");
+    if (deleteForm) deleteForm.hidden = !deleteForm.hidden;
+    return;
+  }
+
   if (event.target.closest("#save-text-log")) {
     const textDraft = document.getElementById("text-log-draft");
     const value = String(textDraft?.value || "").trim();
@@ -644,6 +673,13 @@ function stopAudioRecording() {
 }
 
 popover.addEventListener("submit", async (submitEvent) => {
+  const deleteForm = submitEvent.target.closest(".ppgis-delete-form");
+  if (deleteForm) {
+    submitEvent.preventDefault();
+    await handleDeleteSubmission(deleteForm);
+    return;
+  }
+
   const form = submitEvent.target.closest(".ppgis-popup-form");
   if (!form) return;
 
@@ -654,6 +690,7 @@ popover.addEventListener("submit", async (submitEvent) => {
   const showPhoto = document.getElementById("show-photo").checked;
   const showAudio = document.getElementById("show-audio").checked;
   const sharePublic = document.getElementById("share-public").checked;
+  const deletePassword = String(formData.get("delete_password") || "");
   const activeSavedText = selectedLogTypes.has("text") ? savedTextLog : null;
   const activeSavedPhoto = selectedLogTypes.has("photo") ? savedPhotoFile : null;
   const activeSavedAudio = selectedLogTypes.has("audio") ? savedAudioFile : null;
@@ -680,6 +717,12 @@ popover.addEventListener("submit", async (submitEvent) => {
 
   if (!payload.title) {
     message.textContent = "Title is required.";
+    message.className = "popup-form-message error";
+    return;
+  }
+
+  if (!isValidDeletePassword(deletePassword)) {
+    message.textContent = "Delete password must be exactly 4 numeric digits.";
     message.className = "popup-form-message error";
     return;
   }
@@ -744,6 +787,7 @@ popover.addEventListener("submit", async (submitEvent) => {
 
   const functionPayload = {
     turnstileToken,
+    delete_password: deletePassword,
     ...payload,
     share_public: sharePublic
   };
@@ -776,6 +820,49 @@ popover.addEventListener("submit", async (submitEvent) => {
   closePopover();
   await loadApprovedSubmissions();
 });
+
+async function handleDeleteSubmission(form) {
+  const message = form.querySelector(".ppgis-delete-message");
+  const formData = new FormData(form);
+  const deletePassword = String(formData.get("delete_password") || "");
+  const submissionId = form.dataset.submissionId;
+
+  if (!isValidDeletePassword(deletePassword)) {
+    message.textContent = "Enter the 4-digit delete password.";
+    message.className = "ppgis-delete-message error";
+    return;
+  }
+
+  const confirmed = window.confirm("Delete this log permanently?");
+  if (!confirmed) return;
+
+  message.textContent = "Deleting log...";
+  message.className = "ppgis-delete-message";
+
+  const { data, error } = await supabaseClient.functions.invoke("delete-ppgis-log", {
+    body: {
+      id: submissionId,
+      delete_password: deletePassword
+    }
+  });
+
+  if (error) {
+    const errorMessage = await edgeFunctionErrorMessage(error);
+    message.textContent = `Delete failed: ${errorMessage}`;
+    message.className = "ppgis-delete-message error";
+    return;
+  }
+
+  if (data?.error) {
+    message.textContent = `Delete failed: ${data.error}`;
+    message.className = "ppgis-delete-message error";
+    return;
+  }
+
+  alert("Log deleted.");
+  closePopover();
+  await loadApprovedSubmissions();
+}
 
 basemapSelect.addEventListener("change", (event) => {
   Object.values(baseLayers).forEach((layer) => map.removeLayer(layer));

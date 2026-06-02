@@ -20,6 +20,7 @@ type SubmissionRequest = {
   show_photo?: boolean;
   show_audio?: boolean;
   share_public?: boolean;
+  delete_password?: string;
 };
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
@@ -36,6 +37,44 @@ function cleanString(value: unknown) {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed || null;
+}
+
+function isValidDeletePassword(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4}$/.test(value);
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+async function hashDeletePassword(password: string) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt,
+      iterations: 100000,
+      hash: "SHA-256"
+    },
+    keyMaterial,
+    256
+  );
+
+  return {
+    salt: bytesToBase64(salt),
+    hash: bytesToBase64(new Uint8Array(derivedBits))
+  };
 }
 
 async function verifyTurnstile(token: string, remoteIp: string | null) {
@@ -86,6 +125,7 @@ serve(async (req) => {
   const longitude = Number(body.longitude);
   const realName = cleanString(body.real_name);
   const title = cleanString(body.title);
+  const deletePassword = body.delete_password;
 
   if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
     return jsonResponse({ error: "A valid latitude is required." }, 400);
@@ -101,6 +141,10 @@ serve(async (req) => {
 
   if (!title) {
     return jsonResponse({ error: "Title is required." }, 400);
+  }
+
+  if (!isValidDeletePassword(deletePassword)) {
+    return jsonResponse({ error: "Delete password must be exactly 4 numeric digits." }, 400);
   }
 
   try {
@@ -133,6 +177,8 @@ serve(async (req) => {
     }
   });
 
+  const deletePasswordSecret = await hashDeletePassword(deletePassword);
+
   const insertPayload = {
     latitude,
     longitude,
@@ -143,7 +189,9 @@ serve(async (req) => {
     photo_path: cleanString(body.photo_path),
     audio_path: cleanString(body.audio_path),
     show_photo: Boolean(body.show_photo),
-    show_audio: Boolean(body.show_audio)
+    show_audio: Boolean(body.show_audio),
+    delete_password_salt: deletePasswordSecret.salt,
+    delete_password_hash: deletePasswordSecret.hash
   };
 
   const { data, error } = await supabase

@@ -850,6 +850,7 @@
 }
 
 .ppgis-consent-dialog {
+  position: relative;
   width: min(560px, 100%);
   max-height: min(720px, calc(100vh - 40px));
   overflow-y: auto;
@@ -861,8 +862,35 @@
   box-shadow: 0 26px 70px rgba(16, 35, 49, 0.28);
 }
 
+.ppgis-consent-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.ppgis-consent-close:hover,
+.ppgis-consent-close:focus-visible {
+  color: var(--ink);
+  background: var(--soft);
+  outline: none;
+}
+
 .ppgis-consent-dialog h3 {
   margin: 0;
+  padding-right: 34px;
   color: var(--ink);
   font-size: 1.22rem;
   line-height: 1.2;
@@ -927,6 +955,87 @@
 
 .ppgis-public-popup p {
   margin: 8px 0 0;
+}
+
+.ppgis-delete-log {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.ppgis-delete-toggle,
+.ppgis-delete-form button {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.ppgis-delete-toggle {
+  width: fit-content;
+  color: #a33d3d;
+  background: var(--white);
+  border: 1px solid rgba(163, 61, 61, 0.42);
+}
+
+.ppgis-delete-toggle:hover,
+.ppgis-delete-toggle:focus-visible {
+  background: rgba(163, 61, 61, 0.08);
+  outline: none;
+}
+
+.ppgis-delete-form {
+  display: grid;
+  gap: 8px;
+}
+
+.ppgis-delete-form[hidden] {
+  display: none;
+}
+
+.ppgis-delete-form label {
+  display: grid;
+  gap: 4px;
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.ppgis-delete-form input {
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+}
+
+.ppgis-delete-form button {
+  width: fit-content;
+  color: var(--white);
+  background: #a33d3d;
+  border: 0;
+}
+
+.ppgis-delete-form button:hover,
+.ppgis-delete-form button:focus-visible {
+  background: #7e2929;
+  outline: none;
+}
+
+.ppgis-delete-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.ppgis-delete-message.error {
+  color: #a33d3d;
+  font-weight: 750;
 }
 
 .ppgis-popup-media {
