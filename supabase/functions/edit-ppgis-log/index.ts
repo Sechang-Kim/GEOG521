@@ -12,7 +12,22 @@ type EditRequest = {
   delete_password?: string;
   title?: string | null;
   body_text?: string | null;
+  marker_color?: string | null;
 };
+
+const defaultMarkerColor = "#ff7f00";
+const allowedMarkerColors = new Set([
+  "#a6cee3",
+  "#1f78b4",
+  "#b2df8a",
+  "#33a02c",
+  "#fb9a99",
+  "#e31a1c",
+  "#fdbf6f",
+  "#ff7f00",
+  "#cab2d6",
+  "#6a3d9a"
+]);
 
 type SubmissionSecret = {
   id: string | number;
@@ -38,6 +53,12 @@ function cleanString(value: unknown) {
 
 function isValidDeletePassword(value: unknown): value is string {
   return typeof value === "string" && /^\d{6}$/.test(value);
+}
+
+function validMarkerColor(value: unknown) {
+  if (typeof value !== "string") return defaultMarkerColor;
+  const normalized = value.trim().toLowerCase();
+  return allowedMarkerColors.has(normalized) ? normalized : defaultMarkerColor;
 }
 
 function base64ToBytes(value: string) {
@@ -112,6 +133,7 @@ serve(async (req) => {
   const deletePassword = body.delete_password;
   const title = cleanString(body.title);
   const bodyText = cleanString(body.body_text);
+  const markerColor = validMarkerColor(body.marker_color);
 
   if (!submissionId) {
     return jsonResponse({ error: "Submission id is required." }, 400);
@@ -162,7 +184,8 @@ serve(async (req) => {
     .from("submissions")
     .update({
       title,
-      body_text: bodyText
+      body_text: bodyText,
+      marker_color: markerColor
     })
     .eq("id", submissionId)
     .select("id")

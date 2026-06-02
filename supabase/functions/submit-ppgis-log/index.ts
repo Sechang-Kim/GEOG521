@@ -21,7 +21,22 @@ type SubmissionRequest = {
   show_audio?: boolean;
   share_public?: boolean;
   delete_password?: string;
+  marker_color?: string | null;
 };
+
+const defaultMarkerColor = "#ff7f00";
+const allowedMarkerColors = new Set([
+  "#a6cee3",
+  "#1f78b4",
+  "#b2df8a",
+  "#33a02c",
+  "#fb9a99",
+  "#e31a1c",
+  "#fdbf6f",
+  "#ff7f00",
+  "#cab2d6",
+  "#6a3d9a"
+]);
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -41,6 +56,12 @@ function cleanString(value: unknown) {
 
 function isValidDeletePassword(value: unknown): value is string {
   return typeof value === "string" && /^\d{6}$/.test(value);
+}
+
+function validMarkerColor(value: unknown) {
+  if (typeof value !== "string") return defaultMarkerColor;
+  const normalized = value.trim().toLowerCase();
+  return allowedMarkerColors.has(normalized) ? normalized : defaultMarkerColor;
 }
 
 function bytesToBase64(bytes: Uint8Array) {
@@ -190,6 +211,7 @@ serve(async (req) => {
     audio_path: cleanString(body.audio_path),
     show_photo: Boolean(body.show_photo),
     show_audio: Boolean(body.show_audio),
+    marker_color: validMarkerColor(body.marker_color),
     delete_password_salt: deletePasswordSecret.salt,
     delete_password_hash: deletePasswordSecret.hash
   };

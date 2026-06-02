@@ -4,6 +4,19 @@ const MEDIA_BUCKET = "ppgis-media";
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 const TURNSTILE_SITE_KEY = "0x4AAAAAADdPqMVnjCWpuPM3";
+const DEFAULT_MARKER_COLOR = "#ff7f00";
+const MARKER_COLOR_OPTIONS = [
+  "#a6cee3",
+  "#1f78b4",
+  "#b2df8a",
+  "#33a02c",
+  "#fb9a99",
+  "#e31a1c",
+  "#fdbf6f",
+  "#ff7f00",
+  "#cab2d6",
+  "#6a3d9a"
+];
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
@@ -82,6 +95,29 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function markerColorButton(color, selectedColor = DEFAULT_MARKER_COLOR) {
+  const isSelected = color.toLowerCase() === String(selectedColor || "").toLowerCase();
+  return `
+    <label class="ppgis-color-choice" style="--marker-color: ${color};">
+      <input type="radio" name="marker_color" value="${color}" ${isSelected ? "checked" : ""}>
+      <span aria-hidden="true"></span>
+    </label>
+  `;
+}
+
+function markerColorPalette(selectedColor = DEFAULT_MARKER_COLOR) {
+  return `
+    <div class="ppgis-color-grid" role="radiogroup" aria-label="Marker color">
+      ${MARKER_COLOR_OPTIONS.map((color) => markerColorButton(color, selectedColor)).join("")}
+    </div>
+  `;
+}
+
+function validMarkerColor(value) {
+  const normalized = String(value || "").toLowerCase();
+  return MARKER_COLOR_OPTIONS.find((color) => color.toLowerCase() === normalized) || DEFAULT_MARKER_COLOR;
+}
+
 function openPopover(html) {
   popover.innerHTML = html;
   popover.classList.add("is-open");
@@ -132,6 +168,10 @@ function publicPanel(row) {
           <label>
             <span class="field-label-line">Title <span class="field-required">required</span></span>
             <input name="title" type="text" maxlength="120" required value="${escapeHtml(row.title || "")}">
+          </label>
+          <label>
+            Marker color
+            ${markerColorPalette(row.marker_color || DEFAULT_MARKER_COLOR)}
           </label>
           <label>
             Story
@@ -360,6 +400,10 @@ function openSubmissionForm(lat, lng) {
       <section class="form-step">
         <p class="step-label">Step 4</p>
         <h4>Sharing</h4>
+        <label>
+          Marker color
+          ${markerColorPalette(DEFAULT_MARKER_COLOR)}
+        </label>
         <label class="checkbox-label">
           <input type="checkbox" id="share-public" name="share_public" checked>
           Share this log publicly
@@ -509,7 +553,7 @@ async function loadApprovedSubmissions() {
 
   const { data, error } = await supabaseClient
     .from("public_submissions")
-    .select("id, latitude, longitude, title, body_text, display_name, photo_path, audio_path");
+    .select("id, latitude, longitude, title, body_text, display_name, photo_path, audio_path, marker_color");
 
   if (error) {
     setStatus(`Could not load approved submissions: ${error.message}`, "error");
@@ -527,8 +571,8 @@ async function loadApprovedSubmissions() {
 
     L.circleMarker([row.latitude, row.longitude], {
       radius: 7,
-      color: "#DA895A",
-      fillColor: "#DA895A",
+      color: validMarkerColor(row.marker_color),
+      fillColor: validMarkerColor(row.marker_color),
       fillOpacity: 0.86,
       weight: 2,
       bubblingMouseEvents: false
@@ -739,6 +783,7 @@ popover.addEventListener("submit", async (submitEvent) => {
   const showAudio = document.getElementById("show-audio").checked;
   const sharePublic = document.getElementById("share-public").checked;
   const deletePassword = String(formData.get("delete_password") || "");
+  const markerColor = validMarkerColor(formData.get("marker_color"));
   const activeSavedText = selectedLogTypes.has("text") ? savedTextLog : null;
   const activeSavedPhoto = selectedLogTypes.has("photo") ? savedPhotoFile : null;
   const activeSavedAudio = selectedLogTypes.has("audio") ? savedAudioFile : null;
@@ -752,7 +797,8 @@ popover.addEventListener("submit", async (submitEvent) => {
     photo_path: null,
     audio_path: null,
     show_photo: showPhoto,
-    show_audio: showAudio
+    show_audio: showAudio,
+    marker_color: markerColor
   };
   // `share_public` is sent to the Edge Function for future schema support, but
   // the function keeps it out of the insert until the table has that column.
@@ -939,6 +985,7 @@ async function handleEditSubmission(form) {
   const deletePassword = String(formData.get("delete_password") || "");
   const title = String(formData.get("title") || "").trim();
   const bodyText = String(formData.get("body_text") || "").trim();
+  const markerColor = validMarkerColor(formData.get("marker_color"));
   const submissionId = form.dataset.submissionId;
 
   if (!isValidDeletePassword(deletePassword)) {
@@ -965,11 +1012,12 @@ async function handleEditSubmission(form) {
     const result = await supabaseClient.functions.invoke("edit-ppgis-log", {
       body: {
         id: submissionId,
-        delete_password: deletePassword,
-        title,
-        body_text: bodyText || null
-      }
-    });
+      delete_password: deletePassword,
+      title,
+      body_text: bodyText || null,
+      marker_color: markerColor
+    }
+  });
     data = result.data;
     error = result.error;
   } catch (invokeError) {
