@@ -1,0 +1,8 @@
+[functions.submit-ppgis-log]
+verify_jwt = false
+
+[functions.delete-ppgis-log]
+verify_jwt = false
+
+[functions.edit-ppgis-log]
+verify_jwt = false
