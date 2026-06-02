@@ -189,7 +189,11 @@ async function edgeFunctionErrorMessage(error) {
 
   try {
     const errorBody = await error.context?.json?.();
-    if (errorBody?.error) return errorBody.error;
+    if (errorBody?.error) {
+      return [errorBody.error, errorBody.details, errorBody.hint]
+        .filter(Boolean)
+        .join(" ");
+    }
   } catch {
     // Fall back to the Supabase client error message below.
   }
@@ -843,7 +847,10 @@ popover.addEventListener("submit", async (submitEvent) => {
   }
 
   if (data?.error) {
-    message.textContent = `Submission failed: ${data.error}`;
+    const errorMessage = [data.error, data.details, data.hint]
+      .filter(Boolean)
+      .join(" ");
+    message.textContent = `Submission failed: ${errorMessage}`;
     message.className = "popup-form-message error";
     resetTurnstileWidget();
     return;

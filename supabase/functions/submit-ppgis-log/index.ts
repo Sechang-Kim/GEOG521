@@ -202,7 +202,12 @@ serve(async (req) => {
 
   if (error) {
     console.error("Submission insert error:", error);
-    return jsonResponse({ error: "Could not save submission." }, 500);
+    return jsonResponse({
+      error: error.message || "Could not save submission.",
+      code: error.code,
+      details: error.details,
+      hint: error.hint
+    }, 500);
   }
 
   return jsonResponse({ success: true, id: data.id });
