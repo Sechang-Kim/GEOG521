@@ -146,11 +146,11 @@ function userAvatarUrl(user = currentUser) {
   return user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
 }
 
-function resetMapViewStateForAuth() {
+function resetMapViewStateForAuth(showOwnLogs = false) {
   mapViewState.publicLogs = true;
-  mapViewState.myLogs = false;
-  mapViewState.myShared = false;
-  mapViewState.mySecret = false;
+  mapViewState.myLogs = showOwnLogs;
+  mapViewState.myShared = showOwnLogs;
+  mapViewState.mySecret = showOwnLogs;
 }
 
 function applyCurrentUser(user, options = {}) {
@@ -163,10 +163,22 @@ function applyCurrentUser(user, options = {}) {
   }
 
   if (options.resetView || previousUserId !== nextUserId) {
-    resetMapViewStateForAuth();
+    resetMapViewStateForAuth(Boolean(currentUser));
   }
 
   setAuthStatus();
+}
+
+function showOwnSubmissionLayer(sharePublic) {
+  if (!currentUser) return;
+
+  mapViewState.myLogs = true;
+  if (sharePublic) {
+    mapViewState.myShared = true;
+  } else {
+    mapViewState.mySecret = true;
+  }
+  syncMapViewControls();
 }
 
 function mapViewToggleHtml(toggle, label, checked, options = {}) {
@@ -1327,8 +1339,12 @@ async function loadPublicLogRows() {
   );
 }
 
-async function loadMyLogRows() {
-  if (!currentUser || !mapViewState.myLogs || (!mapViewState.myShared && !mapViewState.mySecret)) {
+async function loadMyLogRows(options = {}) {
+  const requireMyLogs = options.requireMyLogs !== false;
+  const includeShared = options.includeShared ?? mapViewState.myShared;
+  const includeSecret = options.includeSecret ?? mapViewState.mySecret;
+
+  if (!currentUser || (requireMyLogs && !mapViewState.myLogs) || (!includeShared && !includeSecret)) {
     return [];
   }
 
@@ -1345,7 +1361,7 @@ async function loadMyLogRows() {
 
   const filteredRows = (data || []).filter((row) => {
     const sharePublic = row.share_public !== false;
-    return sharePublic ? mapViewState.myShared : mapViewState.mySecret;
+    return sharePublic ? includeShared : includeSecret;
   });
 
   return Promise.all(
@@ -1389,8 +1405,11 @@ async function loadApprovedSubmissions() {
   const requestId = ++mapRenderRequestId;
   approvedLayer.clearLayers();
 
-  const [publicRows, myRows] = await Promise.all([
+  const [publicRows, ownSharedRows, myRows] = await Promise.all([
     loadPublicLogRows(),
+    mapViewState.publicLogs
+      ? loadMyLogRows({ requireMyLogs: false, includeShared: true, includeSecret: false })
+      : Promise.resolve([]),
     loadMyLogRows()
   ]);
 
@@ -1400,6 +1419,7 @@ async function loadApprovedSubmissions() {
 
   const rowsById = new Map();
   publicRows.forEach((row) => rowsById.set(row.id, row));
+  ownSharedRows.forEach((row) => rowsById.set(row.id, row));
   myRows.forEach((row) => rowsById.set(row.id, row));
   rowsById.forEach(renderSubmissionMarker);
   refreshMapSizeSoon();
@@ -1799,9 +1819,10 @@ popover.addEventListener("submit", async (submitEvent) => {
     return;
   }
 
+  showOwnSubmissionLayer(sharePublic);
   alert(sharePublic
-    ? "Submission received. It is now available as a public shared log."
-    : "Submission received. It is saved as a secret log. Turn on My Logs and Secret to show it on your map."
+    ? "Submission received. It is visible to you now and will appear on the public map after approval."
+    : "Submission received. It is saved as a secret log and is visible to you now."
   );
   form.reset();
   resetTurnstileWidget();
