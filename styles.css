@@ -2023,10 +2023,6 @@ h3 {
 }
 
 @media (max-width: 560px) {
-  .site-header {
-    background: rgba(16, 35, 49, 0.7);
-  }
-
   .brand {
     max-width: 220px;
     white-space: normal;
@@ -2051,8 +2047,8 @@ h3 {
   }
 
   .nav-logo {
-    width: clamp(112px, 32vw, 158px);
-    height: clamp(34px, 10vw, 44px);
+    width: clamp(128px, 38vw, 178px);
+    height: clamp(38px, 11vw, 48px);
   }
 
   .nav-logo-layout .nav-auth {
@@ -2132,8 +2128,8 @@ h3 {
   }
 
   .nav-logo {
-    width: clamp(94px, 31vw, 112px);
-    height: 34px;
+    width: clamp(108px, 36vw, 130px);
+    height: 36px;
   }
 
   .nav-auth-button {

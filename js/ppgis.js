@@ -7,6 +7,8 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAADdPqMVnjCWpuPM3";
 const PROFILE_CONSENT_KEY = "ppgisResearchConsentAccepted";
 const WELCOME_DISMISSED_KEY = "ppgisWelcomeDismissedUntil";
 const DEFAULT_MARKER_COLOR = "#ff7f00";
+const MEDIA_UPLOAD_TIMEOUT_MS = 45000;
+const FUNCTION_TIMEOUT_MS = 30000;
 const MARKER_COLOR_OPTIONS = [
   "#a6cee3",
   "#1f78b4",
@@ -45,6 +47,7 @@ const map = L.map("ppgisPopupMap", {
   zoom: 12,
   scrollWheelZoom: true
 });
+let mapSizeRefreshTimers = [];
 
 const baseLayers = {
   "OpenStreetMap": L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -558,14 +561,46 @@ function validMarkerColor(value) {
 function openPopover(html) {
   popover.innerHTML = html;
   popover.classList.add("is-open");
+  refreshMapSizeSoon();
+}
+
+function refreshMapSizeSoon() {
+  mapSizeRefreshTimers.forEach((timerId) => window.clearTimeout(timerId));
+
+  const refresh = () => {
+    map.invalidateSize({ pan: false });
+  };
+
+  window.requestAnimationFrame(refresh);
+  mapSizeRefreshTimers = [
+    window.setTimeout(refresh, 120),
+    window.setTimeout(refresh, 360)
+  ];
+}
+
+function resetMobileViewportPosition() {
+  if (!window.matchMedia("(max-width: 720px)").matches) return;
+
+  const activeElement = document.activeElement;
+  if (activeElement instanceof HTMLElement && typeof activeElement.blur === "function") {
+    activeElement.blur();
+  }
+
+  window.requestAnimationFrame(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  });
 }
 
 function closePopover() {
+  resetMobileViewportPosition();
   resetTurnstileWidget();
   resetRecordingState();
   resetSavedLogState();
   popover.classList.remove("is-open");
   popover.innerHTML = "";
+  refreshMapSizeSoon();
 }
 
 function resetSavedLogState() {
@@ -1176,6 +1211,15 @@ function fileExtension(file) {
   return extension ? `.${extension}` : "";
 }
 
+function withTimeout(promise, timeoutMs, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error(`${label} timed out.`)), timeoutMs);
+    })
+  ]);
+}
+
 async function uploadMediaFile(file, folder, maxBytes) {
   if (!file) return null;
 
@@ -1186,14 +1230,18 @@ async function uploadMediaFile(file, folder, maxBytes) {
   }
 
   const path = `${folder}/${crypto.randomUUID()}${fileExtension(file)}`;
-  const { error } = await supabaseClient
-    .storage
-    .from(MEDIA_BUCKET)
-    .upload(path, file, {
-      cacheControl: "3600",
-      upsert: false,
-      contentType: file.type || undefined
-    });
+  const { error } = await withTimeout(
+    supabaseClient
+      .storage
+      .from(MEDIA_BUCKET)
+      .upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type || undefined
+      }),
+    MEDIA_UPLOAD_TIMEOUT_MS,
+    `${folder === "photos" ? "Photo" : "Audio"} upload`
+  );
 
   if (error) {
     alert(`Could not upload ${folder === "photos" ? "photo" : "audio"}: ${error.message}`);
@@ -1354,6 +1402,7 @@ async function loadApprovedSubmissions() {
   publicRows.forEach((row) => rowsById.set(row.id, row));
   myRows.forEach((row) => rowsById.set(row.id, row));
   rowsById.forEach(renderSubmissionMarker);
+  refreshMapSizeSoon();
 }
 
 map.on("click", (event) => {
@@ -1676,15 +1725,23 @@ popover.addEventListener("submit", async (submitEvent) => {
     return;
   }
 
-  message.textContent = "Uploading media and submitting...";
+  message.textContent = "Preparing submission...";
   message.className = "popup-form-message";
   if (submitButton) submitButton.disabled = true;
 
   try {
+    if (activeSavedPhoto) {
+      message.textContent = "Uploading photo...";
+    }
     payload.photo_path = await uploadMediaFile(activeSavedPhoto, "photos", MAX_PHOTO_BYTES);
+
+    if (activeSavedAudio) {
+      message.textContent = "Uploading audio...";
+    }
     payload.audio_path = await uploadMediaFile(activeSavedAudio, "audio", MAX_AUDIO_BYTES);
-  } catch {
-    message.textContent = "Submission stopped because media upload failed.";
+  } catch (uploadError) {
+    console.error("Media upload failed:", uploadError);
+    message.textContent = `Submission stopped because media upload failed: ${uploadError.message || "Unknown upload error."}`;
     message.className = "popup-form-message error";
     if (submitButton) submitButton.disabled = false;
     return;
@@ -1698,9 +1755,29 @@ popover.addEventListener("submit", async (submitEvent) => {
     share_public: sharePublic
   };
 
-  const { data, error } = await supabaseClient.functions.invoke("submit-ppgis-log", {
-    body: functionPayload
-  });
+  message.textContent = "Submitting saved log...";
+
+  let data;
+  let error;
+
+  try {
+    const result = await withTimeout(
+      supabaseClient.functions.invoke("submit-ppgis-log", {
+        body: functionPayload
+      }),
+      FUNCTION_TIMEOUT_MS,
+      "Submission request"
+    );
+    data = result.data;
+    error = result.error;
+  } catch (invokeError) {
+    console.error("Submission function request failed:", invokeError);
+    message.textContent = `Submission failed: ${invokeError.message || "Could not reach the submission function."}`;
+    message.className = "popup-form-message error";
+    resetTurnstileWidget();
+    if (submitButton) submitButton.disabled = false;
+    return;
+  }
 
   if (error) {
     const errorMessage = await edgeFunctionErrorMessage(error);
@@ -1876,5 +1953,13 @@ supabaseClient.auth.onAuthStateChange(async (_event, session) => {
     .catch((error) => console.warn("Could not sync profile:", error));
 });
 
+window.addEventListener("resize", refreshMapSizeSoon);
+window.addEventListener("orientationchange", refreshMapSizeSoon);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", refreshMapSizeSoon);
+  window.visualViewport.addEventListener("scroll", refreshMapSizeSoon);
+}
+
 refreshAuthState();
 showWelcomeModal();
+refreshMapSizeSoon();

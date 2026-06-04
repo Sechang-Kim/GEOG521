@@ -251,7 +251,11 @@
 .ppgis-map-page {
   min-height: 100vh;
   overflow: hidden;
-  background: var(--nav);
+  background: #d9e3df;
+}
+
+.ppgis-map-page .site-header {
+  background: rgba(16, 35, 49, 0.55);
 }
 
 .ppgis-popup-shell {
@@ -1545,7 +1549,17 @@
 
 @media (max-width: 720px) {
   .ppgis-map-page {
+    height: 100svh;
+    min-height: 100svh;
     overflow: hidden;
+    background: #d9e3df;
+  }
+
+  @supports (height: 100dvh) {
+    .ppgis-map-page {
+      height: 100dvh;
+      min-height: 100dvh;
+    }
   }
 
   .ppgis-map-page .nav-map-view-menu {
@@ -1560,11 +1574,16 @@
   }
 
   .ppgis-popup-shell {
-    height: calc(100vh - 60px);
-    height: calc(100dvh - 60px);
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 60px;
+    bottom: 0;
+    height: auto;
     min-height: 0;
     display: block;
     overflow: hidden;
+    background: #d9e3df;
   }
 
   .ppgis-locate-fab {
@@ -1596,11 +1615,25 @@
     border-width: 1px;
   }
 
+  .ppgis-popover:has(.ppgis-popup-form) .ppgis-popover-close {
+    top: 3px;
+    right: 3px;
+    width: 24px;
+    height: 24px;
+    font-size: 1.3rem;
+  }
+
   .ppgis-full-map {
     position: absolute;
     inset: 0;
-    height: auto;
-    min-height: 0;
+    height: 100%;
+    min-height: 100%;
+    background: #d9e3df;
+  }
+
+  #ppgisPopupMap {
+    height: 100%;
+    min-height: 100%;
   }
 
   .ppgis-welcome-modal h1 {
