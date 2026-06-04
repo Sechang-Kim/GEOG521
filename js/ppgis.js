@@ -5,6 +5,7 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 const TURNSTILE_SITE_KEY = "0x4AAAAAADdPqMVnjCWpuPM3";
 const PROFILE_CONSENT_KEY = "ppgisResearchConsentAccepted";
+const WELCOME_DISMISSED_KEY = "ppgisWelcomeDismissedUntil";
 const DEFAULT_MARKER_COLOR = "#ff7f00";
 const MARKER_COLOR_OPTIONS = [
   "#a6cee3",
@@ -21,36 +22,21 @@ const MARKER_COLOR_OPTIONS = [
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-const navToggle = document.querySelector(".nav-toggle");
-const navMenu = document.querySelector(".nav-menu");
 const statusEl = document.getElementById("ppgisStatus");
-const basemapSelect = document.getElementById("ppgisBasemap");
-const refreshButton = document.getElementById("ppgisRefresh");
 const locateButton = document.getElementById("ppgisLocate");
 const locationStatusEl = document.getElementById("ppgisLocationStatus");
 const navAuth = document.getElementById("navAuth");
 const popover = document.getElementById("ppgisPopover");
-const ppgisShell = document.querySelector(".ppgis-popup-shell");
-const panelToggle = document.querySelector(".ppgis-panel-toggle");
-const panelTab = document.querySelector(".ppgis-panel-tab");
+const welcomeModal = document.getElementById("ppgisWelcomeModal");
+const welcomeCloseButton = document.getElementById("ppgisWelcomeClose");
+const welcomeOkButton = document.getElementById("ppgisWelcomeOk");
+const welcomeDontShowButton = document.getElementById("ppgisWelcomeDontShow");
 
-navToggle.addEventListener("click", () => {
-  const isOpen = navToggle.getAttribute("aria-expanded") === "true";
-  navToggle.setAttribute("aria-expanded", String(!isOpen));
-  navMenu.classList.toggle("is-open");
-});
-
-function setInfoPanel(open) {
-  ppgisShell.classList.toggle("info-collapsed", !open);
-  panelToggle.setAttribute("aria-expanded", String(open));
-  panelTab.setAttribute("aria-expanded", String(open));
-  window.setTimeout(() => map.invalidateSize(), 240);
-}
-
-panelToggle.addEventListener("click", () => setInfoPanel(false));
-panelTab.addEventListener("click", () => setInfoPanel(true));
 locateButton.addEventListener("click", locateUser);
 navAuth.addEventListener("click", handleAuthNavClick);
+welcomeCloseButton.addEventListener("click", closeWelcomeModal);
+welcomeOkButton.addEventListener("click", closeWelcomeModal);
+welcomeDontShowButton.addEventListener("click", dismissWelcomeFor24Hours);
 
 const map = L.map("ppgisPopupMap", {
   center: [47.61, -122.33],
@@ -59,21 +45,25 @@ const map = L.map("ppgisPopupMap", {
 });
 
 const baseLayers = {
-  osm: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  "OpenStreetMap": L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: "&copy; OpenStreetMap contributors"
   }),
-  carto: L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+  "CARTO Light": L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
     maxZoom: 20,
     attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
   }),
-  satellite: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+  "Satellite Imagery": L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 19,
     attribution: "Tiles &copy; Esri"
   })
 };
 
-baseLayers.osm.addTo(map);
+baseLayers["OpenStreetMap"].addTo(map);
+L.control.layers(baseLayers, null, {
+  position: "topright",
+  collapsed: true
+}).addTo(map);
 
 const approvedLayer = L.featureGroup().addTo(map);
 let draftMarker = null;
@@ -90,8 +80,14 @@ let userLocationMarker = null;
 let userLocationAccuracy = null;
 let currentUser = null;
 let currentProfile = null;
+let activeContentType = null;
 
 function setStatus(message, type = "") {
+  if (!statusEl) {
+    if (type === "error") console.error(message);
+    return;
+  }
+
   statusEl.textContent = message;
   statusEl.className = `ppgis-status ${type}`.trim();
 }
@@ -99,6 +95,27 @@ function setStatus(message, type = "") {
 function setLocationStatus(message, type = "") {
   locationStatusEl.textContent = message;
   locationStatusEl.className = `ppgis-location-status ${type}`.trim();
+}
+
+function shouldShowWelcomeModal() {
+  const dismissedUntil = Number(localStorage.getItem(WELCOME_DISMISSED_KEY) || 0);
+  return !dismissedUntil || dismissedUntil < Date.now();
+}
+
+function showWelcomeModal() {
+  if (!welcomeModal || !shouldShowWelcomeModal()) return;
+  welcomeModal.hidden = false;
+  welcomeCloseButton.focus();
+}
+
+function closeWelcomeModal() {
+  if (!welcomeModal) return;
+  welcomeModal.hidden = true;
+}
+
+function dismissWelcomeFor24Hours() {
+  localStorage.setItem(WELCOME_DISMISSED_KEY, String(Date.now() + 24 * 60 * 60 * 1000));
+  closeWelcomeModal();
 }
 
 function userDisplayName(user = currentUser, profile = currentProfile) {
@@ -553,7 +570,7 @@ function showInterviewConsentDialog() {
 
 function openSubmissionForm(lat, lng) {
   if (!currentUser) {
-    setStatus("Sign in from the home page to add a log. Public submissions remain view-only.");
+    setStatus("Sign in to add a log. Public submissions remain view-only.");
     openPopover(`
       <article class="ppgis-public-popup">
         <button class="ppgis-popover-close" type="button" aria-label="Close">&times;</button>
@@ -572,9 +589,16 @@ function openSubmissionForm(lat, lng) {
       <button class="ppgis-popover-close" type="button" aria-label="Close">&times;</button>
       <h3>Submit This Place</h3>
       <p class="popup-form-message">Selected location: ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
+      <div class="ppgis-step-progress" aria-label="Submission progress">
+        <span data-progress-step="1">Place</span>
+        <span data-progress-step="2">Log</span>
+        <span data-progress-step="3">Content</span>
+        <span data-progress-step="4">Sharing</span>
+        <span data-progress-step="5">Submit</span>
+      </div>
 
-      <section class="form-step">
-        <p class="step-label">Step 1</p>
+      <section class="form-step" data-form-step="1">
+        <p class="step-label">Step 1 of 5</p>
         <h4>Title and Anonymity</h4>
         <p class="field-help">Submitting as ${escapeHtml(userDisplayName())} (${escapeHtml(currentUser.email || "no email")}). Your login name and email are stored in the master database.</p>
         <label class="ppgis-popup-check">
@@ -587,30 +611,36 @@ function openSubmissionForm(lat, lng) {
         </label>
       </section>
 
-      <section class="form-step">
-        <p class="step-label">Step 2</p>
-        <h4>Choose What to Log <span class="field-optional">multiple selections allowed</span></h4>
+      <section class="form-step" data-form-step="2" hidden>
+        <p class="step-label">Step 2 of 5</p>
+        <h4>Choose What to Log</h4>
+        <p class="field-help">Choose one log type, save it, then return here. Saved logs turn green. You can add more than one type.</p>
         <div class="log-type-grid" aria-label="Choose log type">
           <button class="log-type-card" type="button" data-log-type="text" aria-pressed="false">
             <span class="log-type-icon log-type-text-icon" aria-hidden="true">Aa</span>
             <span>Text</span>
+            <small class="log-type-status" data-log-status="text">Not saved</small>
           </button>
           <button class="log-type-card" type="button" data-log-type="photo" aria-pressed="false">
             <span class="log-type-icon" aria-hidden="true">
               <img src="img/camera.png" alt="">
             </span>
             <span>Photo</span>
+            <small class="log-type-status" data-log-status="photo">Not saved</small>
           </button>
           <button class="log-type-card" type="button" data-log-type="audio" aria-pressed="false">
             <span class="log-type-icon log-type-audio-icon" aria-hidden="true">REC</span>
             <span>Audio</span>
+            <small class="log-type-status" data-log-status="audio">Not saved</small>
           </button>
         </div>
+        <p class="media-status" id="log-choice-status">Save at least one text, photo, or audio log before continuing.</p>
       </section>
 
-      <section class="form-step">
-        <p class="step-label">Step 3</p>
-        <h4>Add and Save Content</h4>
+      <section class="form-step" data-form-step="3" hidden>
+        <p class="step-label">Step 3 of 5</p>
+        <h4 id="content-step-title">Add and Save Content</h4>
+        <p class="field-help" id="content-step-help">Save this log type before returning to the log choices.</p>
         <div id="text-log-panel" class="log-panel" hidden>
           <label>
             <span class="field-label-line">Text <span class="field-optional">optional</span></span>
@@ -662,9 +692,10 @@ function openSubmissionForm(lat, lng) {
         </div>
       </section>
 
-      <section class="form-step">
-        <p class="step-label">Step 4</p>
+      <section class="form-step" data-form-step="4" hidden>
+        <p class="step-label">Step 4 of 5</p>
         <h4>Sharing</h4>
+        <p class="field-help">Choose what appears on the public map. Private items are stored for project administration but are not shown publicly.</p>
         <label>
           Marker color
           ${markerColorPalette(DEFAULT_MARKER_COLOR)}
@@ -688,8 +719,8 @@ function openSubmissionForm(lat, lng) {
         <p class="field-help">If the log, location, text, photo, or audio is not shared publicly, only the administrator can view that saved data.</p>
       </section>
 
-      <section class="form-step">
-        <p class="step-label">Step 5</p>
+      <section class="form-step" data-form-step="5" hidden>
+        <p class="step-label">Step 5 of 5</p>
         <h4>Submit</h4>
         <label>
           <span class="field-label-line">Edit/Delete password <span class="field-required">required</span></span>
@@ -701,17 +732,21 @@ function openSubmissionForm(lat, lng) {
         </div>
         <button type="submit">Submit Saved Log</button>
       </section>
+      <div class="form-step-actions">
+        <button type="button" class="step-secondary" data-step-prev>Back</button>
+        <button type="button" class="step-primary" data-step-next>Next</button>
+      </div>
       <p class="popup-form-message"></p>
     </form>
   `);
-  renderTurnstileWidget();
+  setFormStep(1);
 }
 
 function setLogPanel(type, active) {
   const button = popover.querySelector(`[data-log-type="${type}"]`);
   const panel = document.getElementById(`${type}-log-panel`);
   if (button) {
-    button.classList.toggle("is-active", active);
+    button.classList.toggle("is-active", active && activeContentType === type);
     button.setAttribute("aria-pressed", String(active));
   }
   if (panel) {
@@ -720,20 +755,204 @@ function setLogPanel(type, active) {
   }
 }
 
-function toggleLogType(type) {
-  const active = selectedLogTypes.has(type);
+function savedLogState(type) {
+  if (type === "text") return Boolean(savedTextLog);
+  if (type === "photo") return Boolean(savedPhotoFile);
+  if (type === "audio") return Boolean(savedAudioFile);
+  return false;
+}
 
-  if (active) {
-    selectedLogTypes.delete(type);
-    if (type === "text") savedTextLog = null;
-    if (type === "photo") savedPhotoFile = null;
-    if (type === "audio") savedAudioFile = null;
-    setLogPanel(type, false);
-    return;
+function hasSavedLog() {
+  return Boolean(savedTextLog || savedPhotoFile || savedAudioFile);
+}
+
+function setFormMessage(form, message, type = "") {
+  const messageEl = form?.querySelector(".popup-form-message:last-child");
+  if (!messageEl) return;
+  messageEl.textContent = message;
+  messageEl.className = `popup-form-message ${type}`.trim();
+}
+
+function updateLogChoiceState() {
+  const form = popover.querySelector(".ppgis-popup-form");
+  if (!form) return;
+
+  ["text", "photo", "audio"].forEach((type) => {
+    const button = form.querySelector(`[data-log-type="${type}"]`);
+    const status = form.querySelector(`[data-log-status="${type}"]`);
+    const saved = savedLogState(type);
+    if (button) {
+      button.classList.toggle("is-saved", saved);
+      button.setAttribute("aria-pressed", String(saved));
+    }
+    if (status) {
+      status.textContent = saved ? "Saved" : "Not saved";
+    }
+  });
+
+  const choiceStatus = document.getElementById("log-choice-status");
+  if (choiceStatus) {
+    const savedCount = ["text", "photo", "audio"].filter(savedLogState).length;
+    choiceStatus.textContent = savedCount
+      ? `${savedCount} saved. You can add another log type or continue to sharing.`
+      : "Save at least one text, photo, or audio log before continuing.";
+    choiceStatus.className = `media-status ${savedCount ? "success" : ""}`.trim();
   }
 
-  selectedLogTypes.add(type);
-  setLogPanel(type, true);
+  if (activeContentType) {
+    const labels = {
+      text: "Text Log",
+      photo: "Photo Log",
+      audio: "Audio Log"
+    };
+    const help = document.getElementById("content-step-help");
+    if (help) {
+      help.textContent = savedLogState(activeContentType)
+        ? `${labels[activeContentType]} is saved. Tap Done to return to log choices.`
+        : `Save this ${labels[activeContentType].toLowerCase()} before returning to log choices.`;
+    }
+  }
+
+  updateStepButtons(form);
+}
+
+function setActiveContentType(type) {
+  activeContentType = type;
+  ["text", "photo", "audio"].forEach((candidate) => {
+    setLogPanel(candidate, candidate === type);
+  });
+
+  const labels = {
+    text: "Text Log",
+    photo: "Photo Log",
+    audio: "Audio Log"
+  };
+  const title = document.getElementById("content-step-title");
+  const help = document.getElementById("content-step-help");
+  if (title) title.textContent = `Add and Save ${labels[type]}`;
+  if (help) {
+    help.textContent = savedLogState(type)
+      ? `${labels[type]} is saved. You can update it or return to log choices.`
+      : `Save this ${labels[type].toLowerCase()} before returning to log choices.`;
+  }
+}
+
+function openLogType(type) {
+  setActiveContentType(type);
+  setFormStep(3);
+}
+
+function visibleFormStep(form) {
+  return Number(form?.dataset.currentStep || 1);
+}
+
+function validateStepBeforeNext(form, step) {
+  if (step === 1) {
+    const title = String(new FormData(form).get("title") || "").trim();
+    if (!title) {
+      setFormMessage(form, "Add a short title before continuing.", "error");
+      return false;
+    }
+  }
+
+  if (step === 2 && !hasSavedLog()) {
+    setFormMessage(form, "Save at least one text, photo, or audio log before continuing.", "error");
+    return false;
+  }
+
+  if (step === 3 && !savedLogState(activeContentType)) {
+    setFormMessage(form, "Save this log type before returning to the log choices.", "error");
+    return false;
+  }
+
+  setFormMessage(form, "");
+  return true;
+}
+
+function nextFormStep(form) {
+  const step = visibleFormStep(form);
+  if (!validateStepBeforeNext(form, step)) return;
+
+  if (step === 1) setFormStep(2);
+  if (step === 2) setFormStep(4);
+  if (step === 3) setFormStep(2);
+  if (step === 4) setFormStep(5);
+}
+
+function previousFormStep(form) {
+  const step = visibleFormStep(form);
+  if (step === 2) setFormStep(1);
+  if (step === 3) setFormStep(2);
+  if (step === 4) setFormStep(2);
+  if (step === 5) setFormStep(4);
+}
+
+function updateStepButtons(form) {
+  if (!form) return;
+  const step = visibleFormStep(form);
+  const prevButton = form.querySelector("[data-step-prev]");
+  const nextButton = form.querySelector("[data-step-next]");
+
+  if (prevButton) {
+    prevButton.hidden = step === 1;
+  }
+
+  if (!nextButton) return;
+  nextButton.hidden = step === 5;
+  nextButton.disabled = (step === 2 && !hasSavedLog()) || (step === 3 && !savedLogState(activeContentType));
+
+  if (step === 1) nextButton.textContent = "Next: Choose Log";
+  if (step === 2) nextButton.textContent = hasSavedLog() ? "Next: Sharing" : "Save a Log First";
+  if (step === 3) nextButton.textContent = savedLogState(activeContentType) ? "Done" : "Save First";
+  if (step === 4) nextButton.textContent = "Next: Submit";
+}
+
+function updateSharingControls() {
+  const visibilityControls = [
+    ["show-text", savedLogState("text")],
+    ["show-photo", savedLogState("photo")],
+    ["show-audio", savedLogState("audio")]
+  ];
+
+  visibilityControls.forEach(([id, visible]) => {
+    const input = document.getElementById(id);
+    const label = input?.closest("label");
+    if (label) label.hidden = !visible;
+  });
+}
+
+function setFormStep(step) {
+  const form = popover.querySelector(".ppgis-popup-form");
+  if (!form) return;
+
+  form.dataset.currentStep = String(step);
+  form.querySelectorAll("[data-form-step]").forEach((section) => {
+    const active = Number(section.dataset.formStep) === step;
+    section.hidden = !active;
+    section.classList.toggle("is-active", active);
+  });
+
+  form.querySelectorAll("[data-progress-step]").forEach((item) => {
+    const progressStep = Number(item.dataset.progressStep);
+    item.classList.toggle("is-active", progressStep === step);
+    item.classList.toggle("is-complete", progressStep < step);
+  });
+
+  if (step === 2) {
+    ["text", "photo", "audio"].forEach((type) => setLogPanel(type, false));
+    activeContentType = null;
+    updateLogChoiceState();
+  }
+
+  if (step === 4) {
+    updateSharingControls();
+  }
+
+  if (step === 5) {
+    renderTurnstileWidget();
+  }
+
+  updateStepButtons(form);
 }
 
 function clearDraftMarker() {
@@ -819,7 +1038,6 @@ async function getSignedUrl(filePath) {
 
 async function loadApprovedSubmissions() {
   approvedLayer.clearLayers();
-  setStatus("Loading approved submissions...");
 
   const { data, error } = await supabaseClient
     .from("public_submissions")
@@ -848,8 +1066,6 @@ async function loadApprovedSubmissions() {
       bubblingMouseEvents: false
     }).on("click", () => publicPanel(publicRow)).addTo(approvedLayer);
   }
-
-  setStatus(`Showing ${data.length} approved submission${data.length === 1 ? "" : "s"}.`);
 }
 
 map.on("click", (event) => {
@@ -896,7 +1112,19 @@ popover.addEventListener("click", (event) => {
 
   const logTypeButton = event.target.closest(".log-type-card");
   if (logTypeButton) {
-    toggleLogType(logTypeButton.dataset.logType);
+    openLogType(logTypeButton.dataset.logType);
+    return;
+  }
+
+  const nextStepButton = event.target.closest("[data-step-next]");
+  if (nextStepButton) {
+    nextFormStep(nextStepButton.closest(".ppgis-popup-form"));
+    return;
+  }
+
+  const prevStepButton = event.target.closest("[data-step-prev]");
+  if (prevStepButton) {
+    previousFormStep(prevStepButton.closest(".ppgis-popup-form"));
     return;
   }
 
@@ -931,7 +1159,9 @@ popover.addEventListener("click", (event) => {
       return;
     }
     savedTextLog = value;
+    selectedLogTypes.add("text");
     setMediaStatus("text-status", "Text saved.", "success");
+    updateLogChoiceState();
     return;
   }
 
@@ -942,7 +1172,9 @@ popover.addEventListener("click", (event) => {
       return;
     }
     savedPhotoFile = file;
+    selectedLogTypes.add("photo");
     setMediaStatus("photo-status", `Photo saved: ${file.name}`, "success");
+    updateLogChoiceState();
     return;
   }
 
@@ -953,7 +1185,9 @@ popover.addEventListener("click", (event) => {
       return;
     }
     savedAudioFile = file;
+    selectedLogTypes.add("audio");
     setMediaStatus("audio-status", `Audio saved: ${file.name}`, "success");
+    updateLogChoiceState();
     return;
   }
 
@@ -971,6 +1205,8 @@ popover.addEventListener("change", (event) => {
   if (event.target.matches("#photo-upload-file, #photo-capture-file")) {
     const file = event.target.files?.[0];
     savedPhotoFile = null;
+    selectedLogTypes.delete("photo");
+    updateLogChoiceState();
     setMediaStatus("photo-status", file ? `Selected photo: ${file.name}. Save Photo to include it.` : "No photo selected.", file ? "" : "");
   }
 
@@ -979,6 +1215,8 @@ popover.addEventListener("change", (event) => {
     if (file) {
       recordedAudioFile = null;
       savedAudioFile = null;
+      selectedLogTypes.delete("audio");
+      updateLogChoiceState();
     }
     setMediaStatus("audio-status", file ? `Selected audio: ${file.name}. Save Audio to include it.` : "No audio selected or recorded.", file ? "" : "");
   }
@@ -987,6 +1225,8 @@ popover.addEventListener("change", (event) => {
 popover.addEventListener("input", (event) => {
   if (event.target.matches("#text-log-draft")) {
     savedTextLog = null;
+    selectedLogTypes.delete("text");
+    updateLogChoiceState();
     setMediaStatus("text-status", "Draft changed. Save Text to include it.");
   }
 });
@@ -1014,8 +1254,10 @@ async function startAudioRecording() {
       const extension = mimeType.includes("mp4") ? "m4a" : "webm";
       recordedAudioFile = new File([blob], `recorded-audio-${crypto.randomUUID()}.${extension}`, { type: mimeType });
       savedAudioFile = null;
+      selectedLogTypes.delete("audio");
       stopActiveAudioStream();
       setMediaStatus("audio-status", `Recorded audio ready: ${recordedAudioFile.name}. Save Audio to include it.`, "success");
+      updateLogChoiceState();
       document.getElementById("start-recording").disabled = false;
       document.getElementById("stop-recording").disabled = true;
     });
@@ -1058,6 +1300,7 @@ popover.addEventListener("submit", async (submitEvent) => {
   submitEvent.preventDefault();
 
   const message = form.querySelector(".popup-form-message:last-child");
+  const submitButton = form.querySelector('button[type="submit"]');
   const formData = new FormData(form);
   const showPhoto = document.getElementById("show-photo").checked;
   const showAudio = document.getElementById("show-audio").checked;
@@ -1150,6 +1393,7 @@ popover.addEventListener("submit", async (submitEvent) => {
 
   message.textContent = "Uploading media and submitting...";
   message.className = "popup-form-message";
+  if (submitButton) submitButton.disabled = true;
 
   try {
     payload.photo_path = await uploadMediaFile(activeSavedPhoto, "photos", MAX_PHOTO_BYTES);
@@ -1157,6 +1401,7 @@ popover.addEventListener("submit", async (submitEvent) => {
   } catch {
     message.textContent = "Submission stopped because media upload failed.";
     message.className = "popup-form-message error";
+    if (submitButton) submitButton.disabled = false;
     return;
   }
 
@@ -1177,6 +1422,7 @@ popover.addEventListener("submit", async (submitEvent) => {
     message.textContent = `Submission failed: ${errorMessage}`;
     message.className = "popup-form-message error";
     resetTurnstileWidget();
+    if (submitButton) submitButton.disabled = false;
     return;
   }
 
@@ -1187,6 +1433,7 @@ popover.addEventListener("submit", async (submitEvent) => {
     message.textContent = `Submission failed: ${errorMessage}`;
     message.className = "popup-form-message error";
     resetTurnstileWidget();
+    if (submitButton) submitButton.disabled = false;
     return;
   }
 
@@ -1333,12 +1580,6 @@ async function handleEditSubmission(form) {
   if (submitButton) submitButton.disabled = false;
 }
 
-basemapSelect.addEventListener("change", (event) => {
-  Object.values(baseLayers).forEach((layer) => map.removeLayer(layer));
-  baseLayers[event.target.value].addTo(map);
-});
-
-refreshButton.addEventListener("click", loadApprovedSubmissions);
 supabaseClient.auth.onAuthStateChange(async (_event, session) => {
   currentUser = session?.user || null;
   setAuthStatus();
@@ -1349,3 +1590,4 @@ supabaseClient.auth.onAuthStateChange(async (_event, session) => {
 
 refreshAuthState();
 loadApprovedSubmissions();
+showWelcomeModal();

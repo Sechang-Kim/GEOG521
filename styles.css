@@ -58,12 +58,21 @@ a {
   min-height: 76px;
 }
 
+.app-nav {
+  min-height: 76px;
+}
+
 .brand {
   color: var(--white);
-  font-weight: 800;
-  font-size: 1rem;
+  font-weight: 900;
+  font-size: 1.12rem;
   letter-spacing: 0;
   white-space: nowrap;
+}
+
+.home-nav .brand,
+.app-nav .brand {
+  font-size: 1.22rem;
 }
 
 .nav-menu {
@@ -126,6 +135,10 @@ a {
 }
 
 .home-nav .nav-auth {
+  margin-left: auto;
+}
+
+.app-nav .nav-auth {
   margin-left: auto;
 }
 

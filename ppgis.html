@@ -6,36 +6,23 @@
   <title>Participatory GIS Platform</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="css/ppgis.css?v=20260603-auth1">
+  <link rel="stylesheet" href="css/ppgis.css?v=20260604-mobile1">
 </head>
 <body class="ppgis-map-page">
   <header class="site-header">
-    <nav class="nav-bar" aria-label="Primary navigation">
+    <nav class="nav-bar app-nav" aria-label="Primary navigation">
       <a class="brand" href="index.html">Seeing School Differently</a>
-      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-      <ul class="nav-menu">
-        <li><a href="top-10-cities.html">Top 10 Cities in US</a></li>
-        <li><a href="data-collection.html">Data Collection with Crawler</a></li>
-        <li><a href="geospatial-classification.html">Geospatial Data Classification</a></li>
-        <li><a class="active" href="ppgis.html">Participatory GIS Platform</a></li>
-      </ul>
       <div class="nav-auth" id="navAuth" aria-live="polite"></div>
     </nav>
   </header>
 
   <main class="ppgis-popup-shell">
-    <button class="ppgis-panel-tab" type="button" aria-controls="ppgisInfoPanel" aria-expanded="false">
-      Info
+    <button class="ppgis-locate-fab" id="ppgisLocate" type="button" aria-label="Use my location" title="Use my location">
+      <span aria-hidden="true">◎</span>
     </button>
 
-    <section class="ppgis-floating-panel" id="ppgisInfoPanel" aria-label="Participatory GIS instructions">
-      <button class="ppgis-panel-toggle" type="button" aria-controls="ppgisInfoPanel" aria-expanded="true">
-        Hide Panel
-      </button>
+    <section class="ppgis-welcome-modal" id="ppgisWelcomeModal" aria-label="Participatory GIS instructions" aria-modal="true" role="dialog" hidden>
+      <button class="ppgis-welcome-close" id="ppgisWelcomeClose" type="button" aria-label="Close">&times;</button>
       <p class="eyebrow">Participatory GIS</p>
       <h1>Share a Place-Based Story</h1>
       <p>
@@ -43,20 +30,11 @@
         story, and anonymity choice. Visitors who are not signed in can view
         approved public submissions.
       </p>
-      <label class="ppgis-basemap-control">
-        Base map
-        <select id="ppgisBasemap">
-          <option value="osm">OpenStreetMap</option>
-          <option value="carto">CARTO Light</option>
-          <option value="satellite">Satellite Imagery</option>
-        </select>
-      </label>
-      <div class="ppgis-location-tool" aria-label="Current location tool">
-        <button id="ppgisLocate" type="button">Use My Location</button>
-        <p id="ppgisLocationStatus">Find your position on the map.</p>
+      <div class="ppgis-welcome-actions">
+        <button id="ppgisWelcomeDontShow" type="button">Do not show for 24 hours</button>
+        <button id="ppgisWelcomeOk" type="button">Close</button>
       </div>
-      <button id="ppgisRefresh" type="button">Refresh Approved Stories</button>
-      <p id="ppgisStatus" class="ppgis-status">Loading approved submissions...</p>
+      <p id="ppgisLocationStatus" class="ppgis-location-status" aria-live="polite"></p>
     </section>
 
     <aside id="ppgisPopover" class="ppgis-popover" aria-live="polite"></aside>
@@ -69,7 +47,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-  <script src="js/ppgis.js?v=20260603-auth1"></script>
+  <script src="js/ppgis.js?v=20260604-mobile1"></script>
 </body>
 </html>
 
