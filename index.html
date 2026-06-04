@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Seeing School Differently</title>
-  <link rel="stylesheet" href="styles.css?v=20260604-mobileheader1">
+  <link rel="stylesheet" href="styles.css?v=20260604-mobilefix1">
 </head>
 <body>
   <header class="site-header">
@@ -300,6 +300,22 @@
       `;
     }
 
+    function closeAccountMenu() {
+      navAuth.querySelectorAll('.nav-profile.is-open').forEach((profile) => {
+        profile.classList.remove('is-open');
+        profile.querySelector('.nav-profile-button')?.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    function toggleAccountMenu(button) {
+      const profile = button.closest('.nav-profile');
+      if (!profile) return;
+      const shouldOpen = !profile.classList.contains('is-open');
+      closeAccountMenu();
+      profile.classList.toggle('is-open', shouldOpen);
+      button.setAttribute('aria-expanded', String(shouldOpen));
+    }
+
     function showResearchConsentDialog() {
       return new Promise((resolve) => {
         const existing = document.querySelector('.research-consent-overlay');
@@ -403,6 +419,13 @@
     }
 
     navAuth.addEventListener('click', async (event) => {
+      const profileButton = event.target.closest('.nav-profile-button');
+      if (profileButton) {
+        event.preventDefault();
+        toggleAccountMenu(profileButton);
+        return;
+      }
+
       const action = event.target.closest('[data-auth-action]')?.dataset.authAction;
       if (action === 'sign-in') {
         await startGoogleLogin();
@@ -411,6 +434,12 @@
         await supabaseClient.auth.signOut();
         localStorage.removeItem(PROFILE_CONSENT_KEY);
         await refreshLoginState();
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!navAuth.contains(event.target)) {
+        closeAccountMenu();
       }
     });
 

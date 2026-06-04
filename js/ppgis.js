@@ -35,6 +35,7 @@ const welcomeDontShowButton = document.getElementById("ppgisWelcomeDontShow");
 locateButton.addEventListener("click", locateUser);
 navAuth.addEventListener("click", handleAuthNavClick);
 navAuth.addEventListener("change", handleMapViewToggleChange);
+document.addEventListener("click", closeAccountMenuOnOutsideClick);
 welcomeCloseButton.addEventListener("click", closeWelcomeModal);
 welcomeOkButton.addEventListener("click", closeWelcomeModal);
 welcomeDontShowButton.addEventListener("click", dismissWelcomeFor24Hours);
@@ -237,6 +238,28 @@ function syncMapViewControls() {
   }
 }
 
+function closeAccountMenu() {
+  navAuth.querySelectorAll(".nav-profile.is-open").forEach((profile) => {
+    profile.classList.remove("is-open");
+    profile.querySelector(".nav-profile-button")?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function toggleAccountMenu(button) {
+  const profile = button.closest(".nav-profile");
+  if (!profile) return;
+  const shouldOpen = !profile.classList.contains("is-open");
+  closeAccountMenu();
+  profile.classList.toggle("is-open", shouldOpen);
+  button.setAttribute("aria-expanded", String(shouldOpen));
+}
+
+function closeAccountMenuOnOutsideClick(event) {
+  if (!navAuth.contains(event.target)) {
+    closeAccountMenu();
+  }
+}
+
 function setAuthStatus() {
   if (!navAuth) return;
 
@@ -310,6 +333,13 @@ async function refreshAuthState() {
 }
 
 async function handleAuthNavClick(event) {
+  const profileButton = event.target.closest(".nav-profile-button");
+  if (profileButton) {
+    event.preventDefault();
+    toggleAccountMenu(profileButton);
+    return;
+  }
+
   const action = event.target.closest("[data-auth-action]")?.dataset.authAction;
   if (action === "sign-in") {
     await startGoogleLogin();

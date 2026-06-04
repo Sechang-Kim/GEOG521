@@ -1545,7 +1545,7 @@
 
 @media (max-width: 720px) {
   .ppgis-map-page {
-    overflow: auto;
+    overflow: hidden;
   }
 
   .ppgis-map-page .nav-map-view-menu {
@@ -1561,13 +1561,15 @@
 
   .ppgis-popup-shell {
     height: calc(100vh - 60px);
-    min-height: 620px;
+    height: calc(100dvh - 60px);
+    min-height: 0;
     display: block;
+    overflow: hidden;
   }
 
   .ppgis-locate-fab {
     left: 12px;
-    top: 12px;
+    top: 86px;
   }
 
   .ppgis-welcome-modal {
@@ -1578,17 +1580,20 @@
   }
 
   .ppgis-popover {
-    position: absolute;
-    left: 0;
-    right: 0;
+    position: fixed;
+    left: 8px;
+    right: 8px;
     top: auto;
-    bottom: 0;
+    bottom: max(8px, env(safe-area-inset-bottom));
     width: auto;
-    max-height: min(78vh, calc(100vh - 104px));
-    padding: 16px;
+    max-height: calc(100vh - 82px);
+    max-height: calc(100dvh - 82px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px;
     margin: 0;
-    border-radius: 14px 14px 0 0;
-    border-width: 1px 0 0;
+    border-radius: 12px;
+    border-width: 1px;
   }
 
   .ppgis-full-map {
@@ -1607,33 +1612,101 @@
   }
 
   .ppgis-popup-form {
-    gap: 8px;
+    gap: 6px;
   }
 
   .ppgis-step-progress {
-    gap: 4px;
+    gap: 3px;
+    margin: 2px 0 0;
   }
 
   .ppgis-step-progress span {
-    min-height: 28px;
-    padding-inline: 3px;
-    font-size: 0.58rem;
+    min-height: 24px;
+    padding: 3px 2px;
+    font-size: 0.54rem;
   }
 
   .form-step-actions {
-    bottom: -16px;
-    margin-inline: -2px;
+    position: static;
+    bottom: auto;
+    margin-inline: 0;
+    padding-top: 6px;
+    background: transparent;
   }
 
-  .ppgis-popup-form input,
+  .ppgis-popover:has(.ppgis-popup-form) {
+    overflow: hidden;
+  }
+
+  .ppgis-popup-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .ppgis-popup-form textarea,
+  .ppgis-edit-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .ppgis-edit-form textarea,
+  .ppgis-delete-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+    padding: 7px 8px;
+    font-size: 16px;
+    line-height: 1.25;
+  }
+
   .ppgis-popup-form textarea {
-    padding: 8px;
+    resize: none;
+  }
+
+  .form-step {
+    gap: 6px;
+    padding: 9px;
+  }
+
+  .ppgis-popup-form h3 {
+    font-size: 0.98rem;
+  }
+
+  .ppgis-popup-form > .popup-form-message:first-of-type {
+    display: none;
+  }
+
+  .ppgis-popup-form h4 {
+    margin-bottom: 4px;
+    font-size: 0.86rem;
+  }
+
+  .field-help,
+  .media-status,
+  .popup-form-message {
+    font-size: 0.72rem !important;
+    line-height: 1.25;
+  }
+
+  .form-step[data-form-step="4"] > .field-help {
+    display: none;
+  }
+
+  .checkbox-label,
+  .ppgis-popup-check {
+    min-height: 30px;
+    font-size: 0.78rem !important;
+  }
+
+  .ppgis-color-grid {
+    gap: 6px;
+  }
+
+  .ppgis-color-choice,
+  .ppgis-color-choice span {
+    width: 24px;
+    height: 24px;
+  }
+
+  .form-step-actions button,
+  .ppgis-popup-form button {
+    min-height: 38px;
   }
 }
 
 @media (max-width: 420px) {
   .ppgis-popover {
-    max-height: min(82vh, calc(100vh - 92px));
+    max-height: calc(100vh - 74px);
+    max-height: calc(100dvh - 74px);
   }
 }
 

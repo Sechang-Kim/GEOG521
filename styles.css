@@ -196,7 +196,8 @@ a {
 .nav-logo-layout .nav-auth-button:focus-visible,
 .nav-logo-layout .nav-profile-button:hover,
 .nav-logo-layout .nav-profile-button:focus-visible,
-.nav-logo-layout .nav-profile:focus-within .nav-profile-button {
+.nav-logo-layout .nav-profile:focus-within .nav-profile-button,
+.nav-logo-layout .nav-profile.is-open .nav-profile-button {
   color: var(--nav);
   background: var(--white);
   border-color: rgba(36, 122, 114, 0.42);
@@ -263,7 +264,8 @@ a {
 
 .nav-profile-button:hover,
 .nav-profile-button:focus-visible,
-.nav-profile:focus-within .nav-profile-button {
+.nav-profile:focus-within .nav-profile-button,
+.nav-profile.is-open .nav-profile-button {
   background: rgba(255, 255, 255, 0.18);
   border-color: rgba(255, 255, 255, 0.4);
   outline: none;
@@ -315,11 +317,18 @@ a {
   transition: opacity 140ms ease, transform 140ms ease;
 }
 
-.nav-profile:hover .nav-profile-menu,
-.nav-profile:focus-within .nav-profile-menu {
+.nav-profile.is-open .nav-profile-menu {
   pointer-events: auto;
   opacity: 1;
   transform: translateY(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nav-profile:hover .nav-profile-menu {
+    pointer-events: auto;
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .nav-profile-menu a,
@@ -2015,7 +2024,7 @@ h3 {
 
 @media (max-width: 560px) {
   .site-header {
-    background: rgba(16, 35, 49, 0.86);
+    background: rgba(16, 35, 49, 0.7);
   }
 
   .brand {
