@@ -42,6 +42,12 @@ function isValidDeletePassword(value: unknown): value is string {
   return typeof value === "string" && /^\d{6}$/.test(value);
 }
 
+function bearerToken(req: Request) {
+  const authorization = req.headers.get("Authorization") || "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match?.[1] || null;
+}
+
 function base64ToBytes(value: string) {
   const binary = atob(value);
   const bytes = new Uint8Array(binary.length);
@@ -122,10 +128,32 @@ serve(async (req) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
     return jsonResponse({ error: "Supabase server environment is not configured." }, 500);
+  }
+
+  const token = bearerToken(req);
+  if (!token) {
+    return jsonResponse({ error: "Sign-in is required before deleting." }, 401);
+  }
+
+  const authClient = createClient(supabaseUrl, anonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    },
+    auth: {
+      persistSession: false
+    }
+  });
+
+  const { data: userData, error: userError } = await authClient.auth.getUser();
+  if (userError || !userData.user) {
+    return jsonResponse({ error: "Could not verify signed-in user." }, 401);
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {

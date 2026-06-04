@@ -4,6 +4,7 @@ const MEDIA_BUCKET = "ppgis-media";
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 const TURNSTILE_SITE_KEY = "0x4AAAAAADdPqMVnjCWpuPM3";
+const PROFILE_CONSENT_KEY = "ppgisResearchConsentAccepted";
 const DEFAULT_MARKER_COLOR = "#ff7f00";
 const MARKER_COLOR_OPTIONS = [
   "#a6cee3",
@@ -27,6 +28,8 @@ const basemapSelect = document.getElementById("ppgisBasemap");
 const refreshButton = document.getElementById("ppgisRefresh");
 const locateButton = document.getElementById("ppgisLocate");
 const locationStatusEl = document.getElementById("ppgisLocationStatus");
+const authStatusEl = document.getElementById("ppgisAuthStatus");
+const authButton = document.getElementById("ppgisAuthButton");
 const popover = document.getElementById("ppgisPopover");
 const ppgisShell = document.querySelector(".ppgis-popup-shell");
 const panelToggle = document.querySelector(".ppgis-panel-toggle");
@@ -48,6 +51,7 @@ function setInfoPanel(open) {
 panelToggle.addEventListener("click", () => setInfoPanel(false));
 panelTab.addEventListener("click", () => setInfoPanel(true));
 locateButton.addEventListener("click", locateUser);
+authButton.addEventListener("click", handleAuthButton);
 
 const map = L.map("ppgisPopupMap", {
   center: [47.61, -122.33],
@@ -85,6 +89,8 @@ let savedAudioFile = null;
 let turnstileWidgetId = null;
 let userLocationMarker = null;
 let userLocationAccuracy = null;
+let currentUser = null;
+let currentProfile = null;
 
 function setStatus(message, type = "") {
   statusEl.textContent = message;
@@ -94,6 +100,85 @@ function setStatus(message, type = "") {
 function setLocationStatus(message, type = "") {
   locationStatusEl.textContent = message;
   locationStatusEl.className = `ppgis-location-status ${type}`.trim();
+}
+
+function userDisplayName(user = currentUser, profile = currentProfile) {
+  return profile?.full_name
+    || user?.user_metadata?.full_name
+    || user?.user_metadata?.name
+    || user?.email?.split("@")[0]
+    || "Participant";
+}
+
+function setAuthStatus() {
+  if (!authStatusEl || !authButton) return;
+
+  if (currentUser) {
+    authStatusEl.textContent = `Signed in as ${userDisplayName()} (${currentUser.email || "no email"})`;
+    authStatusEl.className = "signed-in";
+    authButton.textContent = "Sign Out";
+  } else {
+    authStatusEl.textContent = "Not signed in. Public submissions are view-only.";
+    authStatusEl.className = "";
+    authButton.textContent = "Sign In to Add Logs";
+  }
+}
+
+async function syncCurrentProfile(user) {
+  if (!user) {
+    currentProfile = null;
+    return;
+  }
+
+  const consentAt = localStorage.getItem(PROFILE_CONSENT_KEY);
+  const profilePayload = {
+    id: user.id,
+    email: user.email || null,
+    full_name: userDisplayName(user, null),
+    updated_at: new Date().toISOString()
+  };
+
+  if (consentAt) {
+    profilePayload.research_consent_agreed = true;
+    profilePayload.research_consent_agreed_at = consentAt;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .upsert(profilePayload, { onConflict: "id" })
+    .select("id, email, full_name, research_consent_agreed")
+    .single();
+
+  if (error) {
+    console.warn("Could not sync profile:", error);
+    currentProfile = null;
+    return;
+  }
+
+  currentProfile = data;
+}
+
+async function refreshAuthState() {
+  const { data } = await supabaseClient.auth.getSession();
+  currentUser = data.session?.user || null;
+  await syncCurrentProfile(currentUser);
+  setAuthStatus();
+}
+
+async function handleAuthButton() {
+  if (currentUser) {
+    await supabaseClient.auth.signOut();
+    localStorage.removeItem(PROFILE_CONSENT_KEY);
+    currentUser = null;
+    currentProfile = null;
+    setAuthStatus();
+    setStatus("Signed out. Public submissions remain view-only.");
+    closePopover();
+    clearDraftMarker();
+    return;
+  }
+
+  window.location.href = "index.html#login";
 }
 
 function locateUser() {
@@ -220,15 +305,8 @@ function publicPanel(row) {
   const audioHtml = row.audio_url
     ? `<audio class="ppgis-popup-audio" controls src="${row.audio_url}"></audio>`
     : "";
-
-  openPopover(`
-    <article class="ppgis-public-popup">
-      <button class="ppgis-popover-close" type="button" aria-label="Close">&times;</button>
-      <h3>${escapeHtml(row.title || "Untitled place")}</h3>
-      <p>${escapeHtml(row.body_text || "No story provided.")}</p>
-      <p><strong>Submitted by:</strong> ${escapeHtml(row.display_name || "Anonymous")}</p>
-      ${photoHtml}
-      ${audioHtml}
+  const logToolsHtml = currentUser
+    ? `
       <div class="ppgis-delete-log">
         <div class="ppgis-log-actions">
           <button class="ppgis-edit-toggle" type="button" data-submission-id="${escapeHtml(row.id)}">Edit this log</button>
@@ -267,6 +345,18 @@ function publicPanel(row) {
           <p class="ppgis-delete-message"></p>
         </form>
       </div>
+    `
+    : "";
+
+  openPopover(`
+    <article class="ppgis-public-popup">
+      <button class="ppgis-popover-close" type="button" aria-label="Close">&times;</button>
+      <h3>${escapeHtml(row.title || "Untitled place")}</h3>
+      <p>${escapeHtml(row.body_text || "No story provided.")}</p>
+      <p><strong>Submitted by:</strong> ${escapeHtml(row.display_name || "Anonymous")}</p>
+      ${photoHtml}
+      ${audioHtml}
+      ${logToolsHtml}
     </article>
   `);
 }
@@ -327,7 +417,7 @@ function isValidDeletePassword(value) {
   return /^\d{6}$/.test(String(value || ""));
 }
 
-function showConsentDialog() {
+function showInterviewConsentDialog() {
   return new Promise((resolve) => {
     const existing = document.querySelector(".ppgis-consent-overlay");
     if (existing) existing.remove();
@@ -338,21 +428,15 @@ function showConsentDialog() {
     overlay.innerHTML = `
       <section class="ppgis-consent-dialog" role="dialog" aria-modal="true" aria-labelledby="ppgisConsentTitle">
         <button class="ppgis-consent-close" type="button" aria-label="Close consent window">&times;</button>
-        <h3 id="ppgisConsentTitle">Consent to Submit Your Data</h3>
+        <h3 id="ppgisConsentTitle">Additional Interview Contact</h3>
         <div class="ppgis-consent-copy">
           <p>
-            This form collects your name, photo, story, voice/audio, text, and volunteered geographic information for this PPGIS research project.
-          </p>
-          <p>
-            You may choose whether your post is visible to other visitors. Even if it is hidden from public display, the submitted data will be stored in the master database owned and administered by Sechang Kim. Contact: vs5345@uw.edu.
-          </p>
-          <p>
-            Data is protected by Supabase security settings and will not be used for commercial or unrelated purposes. Your consent is voluntary, specific to this submission, informed by these terms, and shown by selecting the agreement button below.
+            향후 연구자가 이메일을 통해 추가 인터뷰 요청을 할 수 있다. 그러나 원치 않으면 거절해도 되고, 응답하지 않으면 거절한 것으로 간주한다. 또한 인터뷰를 수락했다 하더라도 언제든지 취소 및 중단할 수 있다.
           </p>
         </div>
         <div class="ppgis-consent-actions">
-          <button class="ppgis-consent-agree" type="button">I have read and agree to submit my data</button>
-          <button class="ppgis-consent-decline" type="button">I read but do not agree with the terms</button>
+          <button class="ppgis-consent-agree" type="button">I have read and agree</button>
+          <button class="ppgis-consent-decline" type="button">I read but do not agree</button>
         </div>
       </section>
     `;
@@ -375,6 +459,19 @@ function showConsentDialog() {
 }
 
 function openSubmissionForm(lat, lng) {
+  if (!currentUser) {
+    setStatus("Sign in from the home page to add a log. Public submissions remain view-only.");
+    openPopover(`
+      <article class="ppgis-public-popup">
+        <button class="ppgis-popover-close" type="button" aria-label="Close">&times;</button>
+        <h3>Sign In Required</h3>
+        <p>Public submissions are open for viewing. To add your own log, sign in with Google from the home page after reviewing the research agreement.</p>
+        <button class="ppgis-auth-link" type="button">Sign In</button>
+      </article>
+    `);
+    return;
+  }
+
   resetSavedLogState();
   setStatus("Draft marker placed. Complete the form on the right.");
   openPopover(`
@@ -385,11 +482,8 @@ function openSubmissionForm(lat, lng) {
 
       <section class="form-step">
         <p class="step-label">Step 1</p>
-        <h4>Name and Anonymity</h4>
-        <label>
-          <span class="field-label-line">Name <span class="field-required">required</span></span>
-          <input name="real_name" type="text" required placeholder="Stored in master database">
-        </label>
+        <h4>Title and Anonymity</h4>
+        <p class="field-help">Submitting as ${escapeHtml(userDisplayName())} (${escapeHtml(currentUser.email || "no email")}). Your login name and email are stored in the master database.</p>
         <label class="ppgis-popup-check">
           <input name="is_anonymous" type="checkbox" checked>
           Anonymous on the public map
@@ -677,6 +771,11 @@ map.on("click", (event) => {
 
   const { lat, lng } = event.latlng;
 
+  if (!currentUser) {
+    openSubmissionForm(lat, lng);
+    return;
+  }
+
   if (draftMarker) {
     draftMarker.setLatLng([lat, lng]);
   } else {
@@ -705,6 +804,11 @@ popover.addEventListener("click", (event) => {
   const logTypeButton = event.target.closest(".log-type-card");
   if (logTypeButton) {
     toggleLogType(logTypeButton.dataset.logType);
+    return;
+  }
+
+  if (event.target.closest(".ppgis-auth-link")) {
+    window.location.href = "index.html#login";
     return;
   }
 
@@ -874,7 +978,6 @@ popover.addEventListener("submit", async (submitEvent) => {
   const payload = {
     latitude: Number(form.dataset.lat),
     longitude: Number(form.dataset.lng),
-    real_name: String(formData.get("real_name") || "").trim(),
     title: String(formData.get("title") || "").trim() || null,
     body_text: activeSavedText,
     is_anonymous: formData.get("is_anonymous") === "on",
@@ -888,8 +991,8 @@ popover.addEventListener("submit", async (submitEvent) => {
   // `share_public` is sent to the Edge Function for future schema support, but
   // the function keeps it out of the insert until the table has that column.
 
-  if (!payload.real_name) {
-    message.textContent = "Name is required for the master database.";
+  if (!currentUser) {
+    message.textContent = "Sign in before submitting a log.";
     message.className = "popup-form-message error";
     return;
   }
@@ -944,9 +1047,9 @@ popover.addEventListener("submit", async (submitEvent) => {
     return;
   }
 
-  const consentGranted = await showConsentDialog();
+  const consentGranted = await showInterviewConsentDialog();
   if (!consentGranted) {
-    message.textContent = "You can continue viewing the map, but you cannot submit data unless you agree to the consent terms.";
+    message.textContent = "You can continue viewing the map, but this submission was not saved because the interview contact notice was declined.";
     message.className = "popup-form-message error";
     resetTurnstileWidget();
     return;
@@ -968,6 +1071,7 @@ popover.addEventListener("submit", async (submitEvent) => {
     turnstileToken,
     delete_password: deletePassword,
     ...payload,
+    interview_contact_agreed: true,
     share_public: sharePublic
   };
 
@@ -1142,4 +1246,11 @@ basemapSelect.addEventListener("change", (event) => {
 });
 
 refreshButton.addEventListener("click", loadApprovedSubmissions);
+supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+  currentUser = session?.user || null;
+  await syncCurrentProfile(currentUser);
+  setAuthStatus();
+});
+
+refreshAuthState();
 loadApprovedSubmissions();

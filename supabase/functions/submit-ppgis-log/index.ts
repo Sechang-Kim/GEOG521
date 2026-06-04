@@ -11,7 +11,6 @@ type SubmissionRequest = {
   turnstileToken?: string;
   latitude?: number;
   longitude?: number;
-  real_name?: string;
   is_anonymous?: boolean;
   title?: string | null;
   body_text?: string | null;
@@ -21,6 +20,7 @@ type SubmissionRequest = {
   show_photo?: boolean;
   show_audio?: boolean;
   share_public?: boolean;
+  interview_contact_agreed?: boolean;
   delete_password?: string;
   marker_color?: string | null;
 };
@@ -63,6 +63,19 @@ function validMarkerColor(value: unknown) {
   if (typeof value !== "string") return defaultMarkerColor;
   const normalized = value.trim().toLowerCase();
   return allowedMarkerColors.has(normalized) ? normalized : defaultMarkerColor;
+}
+
+function bearerToken(req: Request) {
+  const authorization = req.headers.get("Authorization") || "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match?.[1] || null;
+}
+
+function userDisplayName(user: { email?: string; user_metadata?: Record<string, unknown> }) {
+  return cleanString(user.user_metadata?.full_name)
+    || cleanString(user.user_metadata?.name)
+    || cleanString(user.email?.split("@")[0])
+    || "Participant";
 }
 
 function bytesToBase64(bytes: Uint8Array) {
@@ -145,7 +158,6 @@ serve(async (req) => {
 
   const latitude = Number(body.latitude);
   const longitude = Number(body.longitude);
-  const realName = cleanString(body.real_name);
   const title = cleanString(body.title);
   const deletePassword = body.delete_password;
 
@@ -157,16 +169,46 @@ serve(async (req) => {
     return jsonResponse({ error: "A valid longitude is required." }, 400);
   }
 
-  if (!realName) {
-    return jsonResponse({ error: "Name is required." }, 400);
-  }
-
   if (!title) {
     return jsonResponse({ error: "Title is required." }, 400);
   }
 
   if (!isValidDeletePassword(deletePassword)) {
     return jsonResponse({ error: "Edit/delete password must be exactly 6 numeric digits." }, 400);
+  }
+
+  if (body.interview_contact_agreed !== true) {
+    return jsonResponse({ error: "Interview contact agreement is required before submitting." }, 400);
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+    return jsonResponse({ error: "Supabase server environment is not configured." }, 500);
+  }
+
+  const token = bearerToken(req);
+  if (!token) {
+    return jsonResponse({ error: "Sign-in is required before submitting." }, 401);
+  }
+
+  const authClient = createClient(supabaseUrl, anonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    },
+    auth: {
+      persistSession: false
+    }
+  });
+
+  const { data: userData, error: userError } = await authClient.auth.getUser();
+  const user = userData.user;
+  if (userError || !user) {
+    return jsonResponse({ error: "Could not verify signed-in user." }, 401);
   }
 
   try {
@@ -186,13 +228,6 @@ serve(async (req) => {
     return jsonResponse({ error: "Could not verify Turnstile token." }, 500);
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    return jsonResponse({ error: "Supabase server environment is not configured." }, 500);
-  }
-
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       persistSession: false
@@ -200,11 +235,29 @@ serve(async (req) => {
   });
 
   const deletePasswordSecret = await hashDeletePassword(deletePassword);
+  const profileName = userDisplayName(user);
+  const profileEmail = cleanString(user.email);
+  const now = new Date().toISOString();
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .upsert({
+      id: user.id,
+      email: profileEmail,
+      full_name: profileName,
+      updated_at: now
+    }, { onConflict: "id" });
+
+  if (profileError) {
+    console.error("Profile upsert error:", profileError);
+    return jsonResponse({ error: "Could not update user profile." }, 500);
+  }
 
   const insertPayload = {
+    user_id: user.id,
     latitude,
     longitude,
-    real_name: realName,
+    real_name: profileName,
     title,
     body_text: cleanString(body.body_text),
     is_anonymous: Boolean(body.is_anonymous),
@@ -214,6 +267,8 @@ serve(async (req) => {
     show_photo: Boolean(body.show_photo),
     show_audio: Boolean(body.show_audio),
     marker_color: validMarkerColor(body.marker_color),
+    interview_contact_agreed: true,
+    interview_contact_agreed_at: now,
     delete_password_salt: deletePasswordSecret.salt,
     delete_password_hash: deletePasswordSecret.hash
   };

@@ -483,6 +483,8 @@
 }
 
 #ppgisRefresh,
+.ppgis-auth-link,
+.ppgis-auth-tool button,
 .ppgis-location-tool button,
 .ppgis-popup-form button {
   min-height: 40px;
@@ -498,12 +500,42 @@
 
 #ppgisRefresh:hover,
 #ppgisRefresh:focus-visible,
+.ppgis-auth-link:hover,
+.ppgis-auth-link:focus-visible,
+.ppgis-auth-tool button:hover,
+.ppgis-auth-tool button:focus-visible,
 .ppgis-location-tool button:hover,
 .ppgis-location-tool button:focus-visible,
 .ppgis-popup-form button:hover,
 .ppgis-popup-form button:focus-visible {
   background: var(--accent-dark);
   outline: none;
+}
+
+.ppgis-auth-tool {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.ppgis-auth-tool p {
+  margin: 0 !important;
+  color: var(--muted) !important;
+  font-size: 0.78rem !important;
+  line-height: 1.32;
+}
+
+.ppgis-auth-tool p.signed-in {
+  color: var(--accent-dark) !important;
+  font-weight: 750;
+}
+
+.ppgis-auth-tool button {
+  width: 100%;
 }
 
 .ppgis-location-tool {

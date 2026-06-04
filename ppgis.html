@@ -6,7 +6,7 @@
   <title>Participatory GIS Platform</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="css/ppgis.css?v=20260602-9">
+  <link rel="stylesheet" href="css/ppgis.css?v=20260603-auth1">
 </head>
 <body class="ppgis-map-page">
   <header class="site-header">
@@ -38,10 +38,14 @@
       <p class="eyebrow">Participatory GIS</p>
       <h1>Share a Place-Based Story</h1>
       <p>
-        Click the map to place a marker. A popup form will ask for your name,
-        title, story, and anonymity choice. Approved submissions appear on the
-        public map.
+        Click the map to place a marker. Signed-in users can submit a title,
+        story, and anonymity choice. Visitors who are not signed in can view
+        approved public submissions.
       </p>
+      <div class="ppgis-auth-tool" aria-label="Authentication status">
+        <p id="ppgisAuthStatus">Checking sign-in status...</p>
+        <button id="ppgisAuthButton" type="button">Sign In</button>
+      </div>
       <label class="ppgis-basemap-control">
         Base map
         <select id="ppgisBasemap">
@@ -68,7 +72,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-  <script src="js/ppgis.js?v=20260602-9"></script>
+  <script src="js/ppgis.js?v=20260603-auth1"></script>
 </body>
 </html>
 
