@@ -28,8 +28,7 @@ const basemapSelect = document.getElementById("ppgisBasemap");
 const refreshButton = document.getElementById("ppgisRefresh");
 const locateButton = document.getElementById("ppgisLocate");
 const locationStatusEl = document.getElementById("ppgisLocationStatus");
-const authStatusEl = document.getElementById("ppgisAuthStatus");
-const authButton = document.getElementById("ppgisAuthButton");
+const navAuth = document.getElementById("navAuth");
 const popover = document.getElementById("ppgisPopover");
 const ppgisShell = document.querySelector(".ppgis-popup-shell");
 const panelToggle = document.querySelector(".ppgis-panel-toggle");
@@ -51,7 +50,7 @@ function setInfoPanel(open) {
 panelToggle.addEventListener("click", () => setInfoPanel(false));
 panelTab.addEventListener("click", () => setInfoPanel(true));
 locateButton.addEventListener("click", locateUser);
-authButton.addEventListener("click", handleAuthButton);
+navAuth.addEventListener("click", handleAuthNavClick);
 
 const map = L.map("ppgisPopupMap", {
   center: [47.61, -122.33],
@@ -110,17 +109,38 @@ function userDisplayName(user = currentUser, profile = currentProfile) {
     || "Participant";
 }
 
+function userInitial(user = currentUser) {
+  return userDisplayName(user).trim().charAt(0).toUpperCase() || "P";
+}
+
+function userAvatarUrl(user = currentUser) {
+  return user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
+}
+
 function setAuthStatus() {
-  if (!authStatusEl || !authButton) return;
+  if (!navAuth) return;
 
   if (currentUser) {
-    authStatusEl.textContent = `Signed in as ${userDisplayName()} (${currentUser.email || "no email"})`;
-    authStatusEl.className = "signed-in";
-    authButton.textContent = "Sign Out";
+    const name = escapeHtml(userDisplayName());
+    const avatarUrl = userAvatarUrl();
+    const avatar = avatarUrl
+      ? `<img class="nav-avatar-img" src="${escapeHtml(avatarUrl)}" alt="">`
+      : `<span class="nav-avatar-initial">${escapeHtml(userInitial())}</span>`;
+
+    navAuth.innerHTML = `
+      <div class="nav-profile">
+        <button class="nav-profile-button" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+          <span class="nav-avatar">${avatar}</span>
+          <span class="nav-profile-name">${name}</span>
+        </button>
+        <div class="nav-profile-menu" role="menu">
+          <a href="ppgis.html" role="menuitem">Go to Map</a>
+          <button type="button" data-auth-action="log-out" role="menuitem">Log out</button>
+        </div>
+      </div>
+    `;
   } else {
-    authStatusEl.textContent = "Not signed in. Public submissions are view-only.";
-    authStatusEl.className = "";
-    authButton.textContent = "Sign In to Add Logs";
+    navAuth.innerHTML = '<button class="nav-auth-button" type="button" data-auth-action="sign-in">Sign in / Sign up</button>';
   }
 }
 
@@ -161,11 +181,21 @@ async function syncCurrentProfile(user) {
 async function refreshAuthState() {
   const { data } = await supabaseClient.auth.getSession();
   currentUser = data.session?.user || null;
-  await syncCurrentProfile(currentUser);
   setAuthStatus();
+  syncCurrentProfile(currentUser)
+    .then(setAuthStatus)
+    .catch((error) => console.warn("Could not sync profile:", error));
 }
 
-async function handleAuthButton() {
+async function handleAuthNavClick(event) {
+  const action = event.target.closest("[data-auth-action]")?.dataset.authAction;
+  if (action === "sign-in") {
+    await startGoogleLogin();
+    return;
+  }
+
+  if (action !== "log-out") return;
+
   if (currentUser) {
     await supabaseClient.auth.signOut();
     localStorage.removeItem(PROFILE_CONSENT_KEY);
@@ -177,8 +207,71 @@ async function handleAuthButton() {
     clearDraftMarker();
     return;
   }
+}
 
-  window.location.href = "index.html#login";
+function showResearchConsentDialog() {
+  return new Promise((resolve) => {
+    const existing = document.querySelector(".ppgis-consent-overlay");
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "ppgis-consent-overlay";
+    overlay.setAttribute("role", "presentation");
+    overlay.innerHTML = `
+      <section class="ppgis-consent-dialog" role="dialog" aria-modal="true" aria-labelledby="ppgisResearchConsentTitle">
+        <button class="ppgis-consent-close" type="button" aria-label="Close consent window">&times;</button>
+        <h3 id="ppgisResearchConsentTitle">Consent to Submit Your Data</h3>
+        <div class="ppgis-consent-copy">
+          <p>
+            This form collects your name, email, photo, story, voice/audio, text, and volunteered geographic information for this PPGIS research project.
+          </p>
+          <p>
+            You may choose whether your post is visible to other visitors. Even if it is hidden from public display, the submitted data will be stored in the master database owned and administered by Sechang Kim. Contact: vs5345@uw.edu.
+          </p>
+          <p>
+            Data is protected by Supabase security settings and will not be used for commercial or unrelated purposes. Your consent is voluntary, specific to this project, informed by these terms, and shown by selecting the agreement button below.
+          </p>
+        </div>
+        <div class="ppgis-consent-actions">
+          <button class="ppgis-consent-agree" type="button">I have read and agree</button>
+          <button class="ppgis-consent-decline" type="button">I read but do not agree</button>
+        </div>
+      </section>
+    `;
+
+    document.body.append(overlay);
+    const agreeButton = overlay.querySelector(".ppgis-consent-agree");
+
+    function close(agreed) {
+      overlay.remove();
+      resolve(agreed);
+    }
+
+    overlay.querySelector(".ppgis-consent-close").addEventListener("click", () => close(false));
+    agreeButton.addEventListener("click", () => close(true));
+    overlay.querySelector(".ppgis-consent-decline").addEventListener("click", () => close(false));
+    agreeButton.focus();
+  });
+}
+
+async function startGoogleLogin() {
+  const agreed = await showResearchConsentDialog();
+  if (!agreed) {
+    setStatus("Agreement is required before adding logs. Public submissions remain view-only.", "error");
+    return;
+  }
+
+  localStorage.setItem(PROFILE_CONSENT_KEY, new Date().toISOString());
+
+  await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: new URL("ppgis.html", window.location.href).href,
+      queryParams: {
+        prompt: "select_account"
+      }
+    }
+  });
 }
 
 function locateUser() {
@@ -431,7 +524,7 @@ function showInterviewConsentDialog() {
         <h3 id="ppgisConsentTitle">Additional Interview Contact</h3>
         <div class="ppgis-consent-copy">
           <p>
-            향후 연구자가 이메일을 통해 추가 인터뷰 요청을 할 수 있다. 그러나 원치 않으면 거절해도 되고, 응답하지 않으면 거절한 것으로 간주한다. 또한 인터뷰를 수락했다 하더라도 언제든지 취소 및 중단할 수 있다.
+            A researcher may contact you by email in the future to request an additional interview. You may decline if you do not wish to participate, and not responding will be treated as declining. Even if you accept an interview request, you may cancel or stop the interview at any time.
           </p>
         </div>
         <div class="ppgis-consent-actions">
@@ -465,7 +558,7 @@ function openSubmissionForm(lat, lng) {
       <article class="ppgis-public-popup">
         <button class="ppgis-popover-close" type="button" aria-label="Close">&times;</button>
         <h3>Sign In Required</h3>
-        <p>Public submissions are open for viewing. To add your own log, sign in with Google from the home page after reviewing the research agreement.</p>
+        <p>Public submissions are open for viewing. To add your own log, sign in with Google after reviewing the research agreement.</p>
         <button class="ppgis-auth-link" type="button">Sign In</button>
       </article>
     `);
@@ -808,7 +901,7 @@ popover.addEventListener("click", (event) => {
   }
 
   if (event.target.closest(".ppgis-auth-link")) {
-    window.location.href = "index.html#login";
+    startGoogleLogin();
     return;
   }
 
@@ -1248,8 +1341,10 @@ basemapSelect.addEventListener("change", (event) => {
 refreshButton.addEventListener("click", loadApprovedSubmissions);
 supabaseClient.auth.onAuthStateChange(async (_event, session) => {
   currentUser = session?.user || null;
-  await syncCurrentProfile(currentUser);
   setAuthStatus();
+  syncCurrentProfile(currentUser)
+    .then(setAuthStatus)
+    .catch((error) => console.warn("Could not sync profile:", error));
 });
 
 refreshAuthState();

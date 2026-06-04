@@ -8,19 +8,9 @@
 </head>
 <body>
   <header class="site-header">
-    <nav class="nav-bar" aria-label="Primary navigation">
+    <nav class="nav-bar home-nav" aria-label="Primary navigation">
       <a class="brand" href="index.html">Seeing School Differently</a>
-      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-      <ul class="nav-menu">
-        <li><a href="top-10-cities.html">Top 10 Cities in US</a></li>
-        <li><a href="data-collection.html">Data Collection with Crawler</a></li>
-        <li><a href="geospatial-classification.html">Geospatial Data Classification</a></li>
-        <li><a href="ppgis.html">Participatory GIS Platform</a></li>
-      </ul>
+      <div class="nav-auth" id="navAuth" aria-live="polite"></div>
     </nav>
   </header>
 
@@ -34,21 +24,8 @@
           meanings, emotions, and lived geographies.
         </p>
         <p class="author-line">Sechang Kim | UW Geography PhD Student</p>
-        <div class="hero-actions" aria-label="Page sections">
-          <a class="button primary" href="#overview">Project Overview</a>
-          <a class="button secondary" href="#methods">Methods</a>
-          <button class="button primary auth-login-button" id="loginButton" type="button">Sign in to Add a Map Log</button>
-        </div>
-        <div class="auth-panel" id="login" aria-live="polite">
-          <p class="eyebrow">Participation Access</p>
-          <h2>Google Sign-In</h2>
-          <p>
-            Anyone can view the public PPGIS map. To add a log, sign in with
-            Google after reviewing the research data agreement. This site stores
-            only your name and email from the login account.
-          </p>
-          <p class="auth-status" id="loginStatus">Not signed in.</p>
-          <button class="auth-signout" id="logoutButton" type="button" hidden>Sign Out</button>
+        <div class="hero-actions" aria-label="Primary action">
+          <a class="button primary" href="ppgis.html">Open PPGIS Map</a>
         </div>
       </div>
       <aside class="map-panel" aria-label="Conceptual map graphic">
@@ -268,23 +245,56 @@
     const PROFILE_CONSENT_KEY = "ppgisResearchConsentAccepted";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-    const navToggle = document.querySelector('.nav-toggle');
-    const navMenu = document.querySelector('.nav-menu');
-    const loginButton = document.getElementById('loginButton');
-    const logoutButton = document.getElementById('logoutButton');
-    const loginStatus = document.getElementById('loginStatus');
-
-    navToggle.addEventListener('click', () => {
-      const isOpen = navToggle.getAttribute('aria-expanded') === 'true';
-      navToggle.setAttribute('aria-expanded', String(!isOpen));
-      navMenu.classList.toggle('is-open');
-    });
+    const navAuth = document.getElementById('navAuth');
 
     function profileName(user) {
       return user?.user_metadata?.full_name
         || user?.user_metadata?.name
         || user?.email?.split('@')[0]
         || 'Participant';
+    }
+
+    function profileInitial(user) {
+      return profileName(user).trim().charAt(0).toUpperCase() || 'P';
+    }
+
+    function profileImage(user) {
+      return user?.user_metadata?.avatar_url || user?.user_metadata?.picture || '';
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function renderAuthNav(user) {
+      if (!user) {
+        navAuth.innerHTML = '<button class="nav-auth-button" type="button" data-auth-action="sign-in">Sign in / Sign up</button>';
+        return;
+      }
+
+      const name = escapeHtml(profileName(user));
+      const image = profileImage(user);
+      const avatar = image
+        ? `<img class="nav-avatar-img" src="${escapeHtml(image)}" alt="">`
+        : `<span class="nav-avatar-initial">${escapeHtml(profileInitial(user))}</span>`;
+
+      navAuth.innerHTML = `
+        <div class="nav-profile">
+          <button class="nav-profile-button" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+            <span class="nav-avatar">${avatar}</span>
+            <span class="nav-profile-name">${name}</span>
+          </button>
+          <div class="nav-profile-menu" role="menu">
+            <a href="ppgis.html" role="menuitem">Go to Map</a>
+            <button type="button" data-auth-action="log-out" role="menuitem">Log out</button>
+          </div>
+        </div>
+      `;
     }
 
     function showResearchConsentDialog() {
@@ -352,27 +362,26 @@
       const { data } = await supabaseClient.auth.getSession();
       const user = data.session?.user || null;
       if (user) {
-        await syncProfileConsent(user);
-        loginButton.textContent = 'Open PPGIS Map';
-        logoutButton.hidden = false;
-        loginStatus.textContent = `Signed in as ${profileName(user)} (${user.email || 'no email'})`;
+        renderAuthNav(user);
+        syncProfileConsent(user).catch((error) => {
+          console.warn('Could not sync profile consent:', error);
+        });
       } else {
-        loginButton.textContent = 'Sign in to Add a Map Log';
-        logoutButton.hidden = true;
-        loginStatus.textContent = 'Not signed in.';
+        renderAuthNav(null);
       }
     }
 
-    loginButton.addEventListener('click', async () => {
+    async function startGoogleLogin() {
       const { data } = await supabaseClient.auth.getSession();
       if (data.session?.user) {
-        window.location.href = 'ppgis.html';
+        await supabaseClient.auth.signOut();
+        localStorage.removeItem(PROFILE_CONSENT_KEY);
+        await refreshLoginState();
         return;
       }
 
       const agreed = await showResearchConsentDialog();
       if (!agreed) {
-        loginStatus.textContent = 'You can view the map without signing in. Agreement is required before adding logs.';
         return;
       }
 
@@ -382,15 +391,24 @@
       await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: new URL('ppgis.html', window.location.href).href
+          redirectTo: new URL('ppgis.html', window.location.href).href,
+          queryParams: {
+            prompt: 'select_account'
+          }
         }
       });
-    });
+    }
 
-    logoutButton.addEventListener('click', async () => {
-      await supabaseClient.auth.signOut();
-      localStorage.removeItem(PROFILE_CONSENT_KEY);
-      await refreshLoginState();
+    navAuth.addEventListener('click', async (event) => {
+      const action = event.target.closest('[data-auth-action]')?.dataset.authAction;
+      if (action === 'sign-in') {
+        await startGoogleLogin();
+      }
+      if (action === 'log-out') {
+        await supabaseClient.auth.signOut();
+        localStorage.removeItem(PROFILE_CONSENT_KEY);
+        await refreshLoginState();
+      }
     });
 
     supabaseClient.auth.onAuthStateChange(() => {

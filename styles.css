@@ -50,8 +50,12 @@ a {
   margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  justify-content: flex-start;
+  gap: 16px;
+}
+
+.home-nav {
+  min-height: 76px;
 }
 
 .brand {
@@ -69,6 +73,7 @@ a {
   display: flex;
   align-items: center;
   gap: 4px;
+  margin-left: auto;
 }
 
 .nav-menu a {
@@ -110,6 +115,157 @@ a {
   height: 2px;
   margin: 5px auto;
   background: var(--white);
+}
+
+.nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.84rem;
+}
+
+.home-nav .nav-auth {
+  margin-left: auto;
+}
+
+.nav-auth-status {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 750;
+}
+
+.nav-auth-button {
+  min-height: 40px;
+  padding: 0 14px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.nav-auth-button:hover,
+.nav-auth-button:focus-visible {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.nav-profile {
+  position: relative;
+}
+
+.nav-profile-button {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 4px 10px 4px 5px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.nav-profile-button:hover,
+.nav-profile-button:focus-visible,
+.nav-profile:focus-within .nav-profile-button {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.4);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.nav-avatar {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--nav);
+  background: var(--white);
+  border-radius: 50%;
+  font-weight: 900;
+}
+
+.nav-avatar-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.nav-profile-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-profile-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 40;
+  min-width: 150px;
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 18px 46px rgba(16, 35, 49, 0.24);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.nav-profile:hover .nav-profile-menu,
+.nav-profile:focus-within .nav-profile-menu {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.nav-profile-menu a,
+.nav-profile-menu button {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-profile-menu a:hover,
+.nav-profile-menu a:focus-visible,
+.nav-profile-menu button:hover,
+.nav-profile-menu button:focus-visible {
+  background: var(--soft);
+  outline: none;
 }
 
 .hero {
@@ -1635,6 +1791,7 @@ h3 {
 @media (max-width: 920px) {
   .nav-toggle {
     display: block;
+    order: 3;
   }
 
   .nav-menu {
@@ -1643,6 +1800,7 @@ h3 {
     right: 16px;
     top: 72px;
     z-index: 1000;
+    order: 4;
     display: none;
     flex-direction: column;
     align-items: stretch;
@@ -1655,6 +1813,27 @@ h3 {
 
   .nav-menu.is-open {
     display: flex;
+  }
+
+  .brand {
+    order: 1;
+  }
+
+  .nav-auth {
+    order: 2;
+    margin-left: auto;
+  }
+
+  .nav-auth-status {
+    display: none;
+  }
+
+  .nav-profile-name {
+    display: none;
+  }
+
+  .nav-profile-button {
+    padding-right: 5px;
   }
 
   .hero,
