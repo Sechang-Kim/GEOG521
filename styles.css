@@ -62,6 +62,16 @@ a {
   min-height: 76px;
 }
 
+.nav-logo-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.nav-spacer {
+  min-width: 0;
+}
+
 .brand {
   color: var(--white);
   font-weight: 900;
@@ -73,6 +83,29 @@ a {
 .home-nav .brand,
 .app-nav .brand {
   font-size: 1.22rem;
+}
+
+.nav-logo-layout .brand {
+  max-width: none;
+  white-space: nowrap;
+}
+
+.nav-logo-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.nav-logo {
+  width: clamp(190px, 28vw, 330px);
+  height: clamp(50px, 5.8vw, 66px);
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.28));
 }
 
 .nav-menu {
@@ -142,6 +175,12 @@ a {
   margin-left: auto;
 }
 
+.nav-logo-layout .nav-auth {
+  justify-self: end;
+  min-width: 0;
+  margin-left: 0;
+}
+
 .nav-auth-status {
   max-width: 140px;
   overflow: hidden;
@@ -160,6 +199,7 @@ a {
   font: inherit;
   font-size: 0.84rem;
   font-weight: 850;
+  white-space: nowrap;
   cursor: pointer;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
   transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
@@ -1837,6 +1877,20 @@ h3 {
     margin-left: auto;
   }
 
+  .nav-logo-layout {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .nav-logo-layout .brand,
+  .nav-logo-layout .nav-auth {
+    order: initial;
+  }
+
+  .nav-logo-layout .nav-auth {
+    margin-left: 0;
+  }
+
   .nav-auth-status {
     display: none;
   }
@@ -1940,6 +1994,49 @@ h3 {
     line-height: 1.2;
   }
 
+  .nav-bar.nav-logo-layout {
+    width: min(100% - 16px, 1180px);
+    min-height: 64px;
+    gap: 6px;
+  }
+
+  .home-nav.nav-logo-layout,
+  .app-nav.nav-logo-layout {
+    min-height: 68px;
+  }
+
+  .nav-logo-layout .brand {
+    max-width: none;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .nav-logo {
+    width: clamp(132px, 39vw, 180px);
+    height: clamp(38px, 12vw, 50px);
+  }
+
+  .nav-logo-layout .nav-auth {
+    gap: 5px;
+  }
+
+  .nav-auth-button {
+    min-height: 38px;
+    padding: 0 9px;
+    font-size: 0.72rem;
+    line-height: 1;
+  }
+
+  .nav-profile-button {
+    min-height: 38px;
+    padding: 3px 5px;
+  }
+
+  .nav-avatar {
+    width: 30px;
+    height: 30px;
+  }
+
   .section,
   .section.muted {
     padding-top: 64px;
@@ -1986,5 +2083,23 @@ h3 {
 
   .button {
     width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .nav-bar.nav-logo-layout {
+    width: min(100% - 12px, 1180px);
+    gap: 4px;
+  }
+
+  .nav-logo {
+    width: clamp(104px, 34vw, 124px);
+    height: 40px;
+  }
+
+  .nav-auth-button {
+    min-height: 36px;
+    padding: 0 7px;
+    font-size: 0.68rem;
   }
 }
