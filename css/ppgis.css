@@ -625,6 +625,129 @@
   accent-color: var(--accent);
 }
 
+.ppgis-map-page .nav-map-view-menu {
+  width: min(286px, calc(100vw - 20px));
+  gap: 8px;
+  padding: 10px;
+}
+
+.ppgis-map-page .nav-map-view {
+  display: grid;
+  gap: 8px;
+}
+
+.ppgis-map-page .nav-map-view-title {
+  margin: 0;
+  padding: 2px 4px 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ppgis-map-page .nav-map-toggle {
+  position: relative;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 8px;
+  color: var(--ink);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ppgis-map-page .nav-map-toggle:hover,
+.ppgis-map-page .nav-map-toggle:focus-within {
+  background: var(--soft);
+}
+
+.ppgis-map-page .nav-map-toggle.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.ppgis-map-page .nav-map-toggle-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 850;
+  line-height: 1.16;
+}
+
+.ppgis-map-page .nav-map-toggle-helper {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.ppgis-map-page .nav-map-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ppgis-map-page .nav-map-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: #d8dee8;
+  box-shadow: inset 0 0 0 1px rgba(16, 35, 49, 0.12);
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.ppgis-map-page .nav-map-switch::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: 0 2px 6px rgba(16, 35, 49, 0.22);
+  transition: transform 160ms ease;
+}
+
+.ppgis-map-page .nav-map-toggle input:checked + .nav-map-switch {
+  background: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(21, 90, 84, 0.28);
+}
+
+.ppgis-map-page .nav-map-toggle input:checked + .nav-map-switch::after {
+  transform: translateX(16px);
+}
+
+.ppgis-map-page .nav-map-toggle input:focus-visible + .nav-map-switch {
+  outline: 2px solid rgba(36, 122, 114, 0.36);
+  outline-offset: 2px;
+}
+
+.ppgis-map-page .nav-map-toggle-children {
+  display: grid;
+  gap: 4px;
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 2px solid var(--line);
+}
+
+.ppgis-map-page .nav-map-toggle-children.is-disabled {
+  border-left-color: rgba(216, 222, 232, 0.7);
+}
+
+.ppgis-map-page .nav-profile-logout {
+  margin-top: 2px;
+  border-top: 1px solid var(--line);
+  color: #a33d3d;
+}
+
 .ppgis-popup-form {
   width: 100%;
   display: grid;
@@ -1215,8 +1338,45 @@
   padding-right: 28px;
 }
 
+.ppgis-popup-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ppgis-visibility-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ppgis-visibility-badge.shared {
+  color: var(--accent-dark);
+  background: rgba(36, 122, 114, 0.12);
+  border: 1px solid rgba(36, 122, 114, 0.24);
+}
+
+.ppgis-visibility-badge.secret {
+  color: #8a3e2f;
+  background: rgba(138, 62, 47, 0.1);
+  border: 1px solid rgba(138, 62, 47, 0.24);
+}
+
 .ppgis-public-popup p {
   margin: 8px 0 0;
+}
+
+.ppgis-secret-note {
+  color: #8a3e2f !important;
+  font-size: 0.76rem;
+  font-weight: 800;
 }
 
 .ppgis-delete-log {
@@ -1388,8 +1548,19 @@
     overflow: auto;
   }
 
+  .ppgis-map-page .nav-map-view-menu {
+    width: min(270px, calc(100vw - 16px));
+    max-height: min(70vh, 480px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .ppgis-map-page .nav-map-toggle {
+    min-height: 44px;
+  }
+
   .ppgis-popup-shell {
-    height: calc(100vh - 76px);
+    height: calc(100vh - 60px);
     min-height: 620px;
     display: block;
   }

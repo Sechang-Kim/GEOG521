@@ -266,6 +266,7 @@ serve(async (req) => {
     show_text: Boolean(body.show_text),
     show_photo: Boolean(body.show_photo),
     show_audio: Boolean(body.show_audio),
+    share_public: body.share_public !== false,
     marker_color: validMarkerColor(body.marker_color),
     interview_contact_agreed: true,
     interview_contact_agreed_at: now,

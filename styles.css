@@ -63,9 +63,11 @@ a {
 }
 
 .nav-logo-layout {
+  width: calc(100% - 48px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
+  gap: 14px;
 }
 
 .nav-spacer {
@@ -181,6 +183,30 @@ a {
   margin-left: 0;
 }
 
+.nav-logo-layout .nav-auth-button,
+.nav-logo-layout .nav-profile-button {
+  color: var(--nav);
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(16, 35, 49, 0.16);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.nav-logo-layout .nav-auth-button:hover,
+.nav-logo-layout .nav-auth-button:focus-visible,
+.nav-logo-layout .nav-profile-button:hover,
+.nav-logo-layout .nav-profile-button:focus-visible,
+.nav-logo-layout .nav-profile:focus-within .nav-profile-button {
+  color: var(--nav);
+  background: var(--white);
+  border-color: rgba(36, 122, 114, 0.42);
+}
+
+.nav-logo-layout .nav-avatar {
+  color: var(--white);
+  background: var(--accent);
+}
+
 .nav-auth-status {
   max-width: 140px;
   overflow: hidden;
@@ -191,7 +217,7 @@ a {
 
 .nav-auth-button {
   min-height: 40px;
-  padding: 0 14px;
+  padding: 0 12px;
   color: var(--white);
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.24);
@@ -1988,6 +2014,10 @@ h3 {
 }
 
 @media (max-width: 560px) {
+  .site-header {
+    background: rgba(16, 35, 49, 0.86);
+  }
+
   .brand {
     max-width: 220px;
     white-space: normal;
@@ -1995,14 +2025,14 @@ h3 {
   }
 
   .nav-bar.nav-logo-layout {
-    width: min(100% - 16px, 1180px);
-    min-height: 64px;
-    gap: 6px;
+    width: calc(100% - 12px);
+    min-height: 58px;
+    gap: 4px;
   }
 
   .home-nav.nav-logo-layout,
   .app-nav.nav-logo-layout {
-    min-height: 68px;
+    min-height: 60px;
   }
 
   .nav-logo-layout .brand {
@@ -2012,8 +2042,8 @@ h3 {
   }
 
   .nav-logo {
-    width: clamp(132px, 39vw, 180px);
-    height: clamp(38px, 12vw, 50px);
+    width: clamp(112px, 32vw, 158px);
+    height: clamp(34px, 10vw, 44px);
   }
 
   .nav-logo-layout .nav-auth {
@@ -2021,20 +2051,20 @@ h3 {
   }
 
   .nav-auth-button {
-    min-height: 38px;
-    padding: 0 9px;
-    font-size: 0.72rem;
+    min-height: 34px;
+    padding: 0 7px;
+    font-size: 0.7rem;
     line-height: 1;
   }
 
   .nav-profile-button {
-    min-height: 38px;
+    min-height: 34px;
     padding: 3px 5px;
   }
 
   .nav-avatar {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
   }
 
   .section,
@@ -2088,18 +2118,18 @@ h3 {
 
 @media (max-width: 360px) {
   .nav-bar.nav-logo-layout {
-    width: min(100% - 12px, 1180px);
+    width: calc(100% - 8px);
     gap: 4px;
   }
 
   .nav-logo {
-    width: clamp(104px, 34vw, 124px);
-    height: 40px;
+    width: clamp(94px, 31vw, 112px);
+    height: 34px;
   }
 
   .nav-auth-button {
-    min-height: 36px;
-    padding: 0 7px;
-    font-size: 0.68rem;
+    min-height: 32px;
+    padding: 0 6px;
+    font-size: 0.64rem;
   }
 }

@@ -34,6 +34,7 @@ const welcomeDontShowButton = document.getElementById("ppgisWelcomeDontShow");
 
 locateButton.addEventListener("click", locateUser);
 navAuth.addEventListener("click", handleAuthNavClick);
+navAuth.addEventListener("change", handleMapViewToggleChange);
 welcomeCloseButton.addEventListener("click", closeWelcomeModal);
 welcomeOkButton.addEventListener("click", closeWelcomeModal);
 welcomeDontShowButton.addEventListener("click", dismissWelcomeFor24Hours);
@@ -81,6 +82,13 @@ let userLocationAccuracy = null;
 let currentUser = null;
 let currentProfile = null;
 let activeContentType = null;
+let mapRenderRequestId = 0;
+const mapViewState = {
+  publicLogs: true,
+  myLogs: false,
+  myShared: false,
+  mySecret: false
+};
 
 function setStatus(message, type = "") {
   if (!statusEl) {
@@ -134,6 +142,101 @@ function userAvatarUrl(user = currentUser) {
   return user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
 }
 
+function resetMapViewStateForAuth() {
+  mapViewState.publicLogs = true;
+  mapViewState.myLogs = false;
+  mapViewState.myShared = false;
+  mapViewState.mySecret = false;
+}
+
+function applyCurrentUser(user, options = {}) {
+  const previousUserId = currentUser?.id || null;
+  const nextUserId = user?.id || null;
+  currentUser = user || null;
+
+  if (!currentUser) {
+    currentProfile = null;
+  }
+
+  if (options.resetView || previousUserId !== nextUserId) {
+    resetMapViewStateForAuth();
+  }
+
+  setAuthStatus();
+}
+
+function mapViewToggleHtml(toggle, label, checked, options = {}) {
+  const disabled = Boolean(options.disabled);
+  const helper = options.helper
+    ? `<small class="nav-map-toggle-helper">${escapeHtml(options.helper)}</small>`
+    : "";
+
+  return `
+    <label class="nav-map-toggle ${disabled ? "is-disabled" : ""}">
+      <span class="nav-map-toggle-copy">
+        <span>${escapeHtml(label)}</span>
+        ${helper}
+      </span>
+      <input type="checkbox" data-map-view-toggle="${toggle}" ${checked ? "checked" : ""} ${disabled ? "disabled" : ""}>
+      <span class="nav-map-switch" aria-hidden="true"></span>
+    </label>
+  `;
+}
+
+function mapViewMenuHtml() {
+  const childDisabled = !mapViewState.myLogs;
+
+  return `
+    <div class="nav-profile-menu nav-map-view-menu" role="menu" aria-label="Account and map visibility">
+      <div class="nav-map-view" aria-label="Show on map">
+        <p class="nav-map-view-title">Show on Map</p>
+        ${mapViewToggleHtml("public", "Public Logs", mapViewState.publicLogs)}
+        ${mapViewToggleHtml("my", "My Logs", mapViewState.myLogs)}
+        <div class="nav-map-toggle-children ${childDisabled ? "is-disabled" : ""}">
+          ${mapViewToggleHtml("shared", "Shared", mapViewState.myShared, { disabled: childDisabled })}
+          ${mapViewToggleHtml("secret", "Secret", mapViewState.mySecret, {
+            disabled: childDisabled,
+            helper: "Not shown on the public map."
+          })}
+        </div>
+      </div>
+      <button class="nav-profile-logout" type="button" data-auth-action="log-out" role="menuitem">Log out</button>
+    </div>
+  `;
+}
+
+function syncMapViewControls() {
+  if (!navAuth) return;
+
+  const controls = {
+    public: navAuth.querySelector('[data-map-view-toggle="public"]'),
+    my: navAuth.querySelector('[data-map-view-toggle="my"]'),
+    shared: navAuth.querySelector('[data-map-view-toggle="shared"]'),
+    secret: navAuth.querySelector('[data-map-view-toggle="secret"]')
+  };
+
+  if (controls.public) controls.public.checked = mapViewState.publicLogs;
+  if (controls.my) controls.my.checked = mapViewState.myLogs;
+  if (controls.shared) {
+    controls.shared.checked = mapViewState.myShared;
+    controls.shared.disabled = !mapViewState.myLogs;
+  }
+  if (controls.secret) {
+    controls.secret.checked = mapViewState.mySecret;
+    controls.secret.disabled = !mapViewState.myLogs;
+  }
+
+  navAuth.querySelectorAll(".nav-map-toggle").forEach((label) => {
+    const input = label.querySelector("[data-map-view-toggle]");
+    label.classList.toggle("is-disabled", Boolean(input?.disabled));
+  });
+
+  const childGroup = navAuth.querySelector(".nav-map-toggle-children");
+  if (childGroup) {
+    childGroup.classList.toggle("is-disabled", !mapViewState.myLogs);
+  }
+}
+
 function setAuthStatus() {
   if (!navAuth) return;
 
@@ -150,10 +253,7 @@ function setAuthStatus() {
           <span class="nav-avatar">${avatar}</span>
           <span class="nav-profile-name">${name}</span>
         </button>
-        <div class="nav-profile-menu" role="menu">
-          <a href="ppgis.html" role="menuitem">Go to Map</a>
-          <button type="button" data-auth-action="log-out" role="menuitem">Log out</button>
-        </div>
+        ${mapViewMenuHtml()}
       </div>
     `;
   } else {
@@ -196,9 +296,14 @@ async function syncCurrentProfile(user) {
 }
 
 async function refreshAuthState() {
-  const { data } = await supabaseClient.auth.getSession();
-  currentUser = data.session?.user || null;
-  setAuthStatus();
+  const { data, error } = await supabaseClient.auth.getUser();
+  if (error) {
+    console.warn("Could not verify signed-in user:", error);
+  }
+
+  applyCurrentUser(data?.user || null, { resetView: true });
+  await loadApprovedSubmissions();
+
   syncCurrentProfile(currentUser)
     .then(setAuthStatus)
     .catch((error) => console.warn("Could not sync profile:", error));
@@ -216,14 +321,47 @@ async function handleAuthNavClick(event) {
   if (currentUser) {
     await supabaseClient.auth.signOut();
     localStorage.removeItem(PROFILE_CONSENT_KEY);
-    currentUser = null;
-    currentProfile = null;
-    setAuthStatus();
+    applyCurrentUser(null, { resetView: true });
+    await loadApprovedSubmissions();
     setStatus("Signed out. Public submissions remain view-only.");
     closePopover();
     clearDraftMarker();
     return;
   }
+}
+
+async function handleMapViewToggleChange(event) {
+  const toggle = event.target.closest("[data-map-view-toggle]");
+  if (!toggle) return;
+
+  const view = toggle.dataset.mapViewToggle;
+
+  if (view === "public") {
+    mapViewState.publicLogs = toggle.checked;
+  }
+
+  if (view === "my") {
+    mapViewState.myLogs = toggle.checked;
+    mapViewState.myShared = toggle.checked;
+    mapViewState.mySecret = toggle.checked;
+  }
+
+  if (view === "shared" && mapViewState.myLogs) {
+    mapViewState.myShared = toggle.checked;
+  }
+
+  if (view === "secret" && mapViewState.myLogs) {
+    mapViewState.mySecret = toggle.checked;
+  }
+
+  if (!currentUser) {
+    mapViewState.myLogs = false;
+    mapViewState.myShared = false;
+    mapViewState.mySecret = false;
+  }
+
+  syncMapViewControls();
+  await loadApprovedSubmissions();
 }
 
 function showResearchConsentDialog() {
@@ -415,7 +553,18 @@ function publicPanel(row) {
   const audioHtml = row.audio_url
     ? `<audio class="ppgis-popup-audio" controls src="${row.audio_url}"></audio>`
     : "";
-  const logToolsHtml = currentUser
+  const visibilityBadgeHtml = row.is_secret
+    ? `<span class="ppgis-visibility-badge secret">Secret</span>`
+    : row.is_owner
+      ? `<span class="ppgis-visibility-badge shared">Shared</span>`
+      : "";
+  const secretNoteHtml = row.is_secret
+    ? `<p class="ppgis-secret-note">Not shown on the public map.</p>`
+    : "";
+  const storyText = row.show_text === false && !row.is_owner
+    ? "This participant chose not to show the text publicly."
+    : row.body_text || "No story provided.";
+  const logToolsHtml = currentUser && row.is_owner
     ? `
       <div class="ppgis-delete-log">
         <div class="ppgis-log-actions">
@@ -461,9 +610,13 @@ function publicPanel(row) {
   openPopover(`
     <article class="ppgis-public-popup">
       <button class="ppgis-popover-close" type="button" aria-label="Close">&times;</button>
-      <h3>${escapeHtml(row.title || "Untitled place")}</h3>
-      <p>${escapeHtml(row.body_text || "No story provided.")}</p>
+      <div class="ppgis-popup-heading">
+        <h3>${escapeHtml(row.title || "Untitled place")}</h3>
+        ${visibilityBadgeHtml}
+      </div>
+      <p>${escapeHtml(storyText)}</p>
       <p><strong>Submitted by:</strong> ${escapeHtml(row.display_name || "Anonymous")}</p>
+      ${secretNoteHtml}
       ${photoHtml}
       ${audioHtml}
       ${logToolsHtml}
@@ -1036,36 +1189,141 @@ async function getSignedUrl(filePath) {
   return data?.signedUrl || null;
 }
 
-async function loadApprovedSubmissions() {
-  approvedLayer.clearLayers();
+function isValidSubmissionLocation(row) {
+  return Number.isFinite(Number(row.latitude)) && Number.isFinite(Number(row.longitude));
+}
+
+function normalizePublicSubmission(row) {
+  return {
+    ...row,
+    marker_color: validMarkerColor(row.marker_color),
+    share_public: true,
+    is_secret: false,
+    is_owner: false,
+    source: "public"
+  };
+}
+
+function normalizeMySubmission(row) {
+  const sharePublic = row.share_public !== false;
+  return {
+    ...row,
+    marker_color: validMarkerColor(row.marker_color),
+    share_public: sharePublic,
+    is_secret: !sharePublic,
+    is_owner: true,
+    source: "mine",
+    display_name: row.is_anonymous ? "You (anonymous publicly)" : userDisplayName()
+  };
+}
+
+async function attachMediaUrls(row) {
+  const [photoUrl, audioUrl] = await Promise.all([
+    getSignedUrl(row.photo_path),
+    getSignedUrl(row.audio_path)
+  ]);
+
+  return {
+    ...row,
+    photo_url: photoUrl,
+    audio_url: audioUrl
+  };
+}
+
+async function loadPublicLogRows() {
+  if (!mapViewState.publicLogs) return [];
 
   const { data, error } = await supabaseClient
     .from("public_submissions")
-    .select("id, latitude, longitude, title, body_text, display_name, photo_path, audio_path, marker_color, show_text");
+    .select("id, latitude, longitude, title, body_text, display_name, photo_path, audio_path, marker_color, show_text, created_at");
 
   if (error) {
-    setStatus(`Could not load approved submissions: ${error.message}`, "error");
+    setStatus(`Could not load public logs: ${error.message}`, "error");
+    return [];
+  }
+
+  return Promise.all(
+    (data || [])
+      .filter(isValidSubmissionLocation)
+      .map((row) => attachMediaUrls(normalizePublicSubmission(row)))
+  );
+}
+
+async function loadMyLogRows() {
+  if (!currentUser || !mapViewState.myLogs || (!mapViewState.myShared && !mapViewState.mySecret)) {
+    return [];
+  }
+
+  const { data, error } = await supabaseClient
+    .from("submissions")
+    .select("id, user_id, latitude, longitude, title, body_text, photo_path, audio_path, marker_color, show_text, share_public, is_anonymous, status, created_at")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    setStatus(`Could not load your logs: ${error.message}`, "error");
+    return [];
+  }
+
+  const filteredRows = (data || []).filter((row) => {
+    const sharePublic = row.share_public !== false;
+    return sharePublic ? mapViewState.myShared : mapViewState.mySecret;
+  });
+
+  return Promise.all(
+    filteredRows
+      .filter(isValidSubmissionLocation)
+      .map((row) => attachMediaUrls(normalizeMySubmission(row)))
+  );
+}
+
+function markerOptionsForSubmission(row) {
+  if (row.is_secret) {
+    return {
+      radius: 8,
+      color: "#102331",
+      fillColor: "#7a8791",
+      fillOpacity: 0.62,
+      weight: 2,
+      dashArray: "4 3",
+      bubblingMouseEvents: false
+    };
+  }
+
+  const markerColor = validMarkerColor(row.marker_color);
+  return {
+    radius: row.is_owner ? 8 : 7,
+    color: row.is_owner ? "#102331" : markerColor,
+    fillColor: markerColor,
+    fillOpacity: row.is_owner ? 0.92 : 0.86,
+    weight: row.is_owner ? 3 : 2,
+    bubblingMouseEvents: false
+  };
+}
+
+function renderSubmissionMarker(row) {
+  L.circleMarker([Number(row.latitude), Number(row.longitude)], markerOptionsForSubmission(row))
+    .on("click", () => publicPanel(row))
+    .addTo(approvedLayer);
+}
+
+async function loadApprovedSubmissions() {
+  const requestId = ++mapRenderRequestId;
+  approvedLayer.clearLayers();
+
+  const [publicRows, myRows] = await Promise.all([
+    loadPublicLogRows(),
+    loadMyLogRows()
+  ]);
+
+  if (requestId !== mapRenderRequestId) {
     return;
   }
 
-  for (const row of data) {
-    const photoUrl = await getSignedUrl(row.photo_path);
-    const audioUrl = await getSignedUrl(row.audio_path);
-    const publicRow = {
-      ...row,
-      photo_url: photoUrl,
-      audio_url: audioUrl
-    };
-
-    L.circleMarker([row.latitude, row.longitude], {
-      radius: 7,
-      color: validMarkerColor(row.marker_color),
-      fillColor: validMarkerColor(row.marker_color),
-      fillOpacity: 0.86,
-      weight: 2,
-      bubblingMouseEvents: false
-    }).on("click", () => publicPanel(publicRow)).addTo(approvedLayer);
-  }
+  const rowsById = new Map();
+  publicRows.forEach((row) => rowsById.set(row.id, row));
+  myRows.forEach((row) => rowsById.set(row.id, row));
+  rowsById.forEach(renderSubmissionMarker);
 }
 
 map.on("click", (event) => {
@@ -1324,9 +1582,6 @@ popover.addEventListener("submit", async (submitEvent) => {
     show_audio: showAudio,
     marker_color: markerColor
   };
-  // `share_public` is sent to the Edge Function for future schema support, but
-  // the function keeps it out of the insert until the table has that column.
-
   if (!currentUser) {
     message.textContent = "Sign in before submitting a log.";
     message.className = "popup-form-message error";
@@ -1437,7 +1692,10 @@ popover.addEventListener("submit", async (submitEvent) => {
     return;
   }
 
-  alert("Submission received. It is now visible on the map.");
+  alert(sharePublic
+    ? "Submission received. It is now available as a public shared log."
+    : "Submission received. It is saved as a secret log. Turn on My Logs and Secret to show it on your map."
+  );
   form.reset();
   resetTurnstileWidget();
   message.textContent = "Submission received. Reloading map...";
@@ -1581,13 +1839,12 @@ async function handleEditSubmission(form) {
 }
 
 supabaseClient.auth.onAuthStateChange(async (_event, session) => {
-  currentUser = session?.user || null;
-  setAuthStatus();
+  applyCurrentUser(session?.user || null);
+  await loadApprovedSubmissions();
   syncCurrentProfile(currentUser)
     .then(setAuthStatus)
     .catch((error) => console.warn("Could not sync profile:", error));
 });
 
 refreshAuthState();
-loadApprovedSubmissions();
 showWelcomeModal();
