@@ -1112,7 +1112,8 @@ function signInWithKakao() {
   return supabaseClient.auth.signInWithOAuth({
     provider: "kakao",
     options: {
-      redirectTo: window.location.href
+      redirectTo: window.location.href,
+      scopes: "account_email profile_nickname"
     }
   });
 }

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Seeing School Differently</title>
-  <link rel="stylesheet" href="styles.css?v=20260604-authbutton1">
+  <link rel="stylesheet" href="styles.css?v=20260605-kakaologin1">
 </head>
 <body>
   <header class="site-header">
@@ -253,8 +253,9 @@
     function profileName(user) {
       return user?.user_metadata?.full_name
         || user?.user_metadata?.name
+        || user?.user_metadata?.nickname
         || user?.email?.split('@')[0]
-        || 'Participant';
+        || 'User';
     }
 
     function profileInitial(user) {
@@ -277,11 +278,21 @@
     function renderAuthNav(user) {
       if (!user) {
         navAuth.innerHTML = `
-          <button class="nav-auth-button" type="button" data-auth-action="sign-in" aria-label="Sign in or sign up">
-            <span class="nav-auth-full">Sign in / Sign up</span>
-            <span class="nav-auth-short">Sign in</span>
-            <span class="nav-auth-icon" aria-hidden="true">S</span>
-          </button>
+          <div class="nav-signin">
+            <button class="nav-auth-button" type="button" data-auth-action="sign-in" aria-haspopup="true" aria-expanded="false" aria-label="Sign in or sign up">
+              <span class="nav-auth-full">Sign in / Sign up</span>
+              <span class="nav-auth-short">Sign in</span>
+              <span class="nav-auth-icon" aria-hidden="true">S</span>
+            </button>
+            <div class="nav-signin-menu" role="menu" aria-label="Choose a sign-in option">
+              <button class="nav-provider-button nav-provider-google" type="button" data-auth-provider="google" role="menuitem">
+                Continue with Google
+              </button>
+              <button class="nav-provider-button nav-provider-kakao" type="button" data-auth-provider="kakao" role="menuitem">
+                Continue with Kakao
+              </button>
+            </div>
+          </div>
         `;
         return;
       }
@@ -313,12 +324,30 @@
       });
     }
 
+    function closeSignInMenu() {
+      navAuth.querySelectorAll('.nav-signin.is-open').forEach((signin) => {
+        signin.classList.remove('is-open');
+        signin.querySelector('.nav-auth-button')?.setAttribute('aria-expanded', 'false');
+      });
+    }
+
     function toggleAccountMenu(button) {
       const profile = button.closest('.nav-profile');
       if (!profile) return;
       const shouldOpen = !profile.classList.contains('is-open');
+      closeSignInMenu();
       closeAccountMenu();
       profile.classList.toggle('is-open', shouldOpen);
+      button.setAttribute('aria-expanded', String(shouldOpen));
+    }
+
+    function toggleSignInMenu(button) {
+      const signin = button.closest('.nav-signin');
+      if (!signin) return;
+      const shouldOpen = !signin.classList.contains('is-open');
+      closeAccountMenu();
+      closeSignInMenu();
+      signin.classList.toggle('is-open', shouldOpen);
       button.setAttribute('aria-expanded', String(shouldOpen));
     }
 
@@ -397,6 +426,14 @@
     }
 
     async function startGoogleLogin() {
+      await startSocialLogin('google');
+    }
+
+    async function startKakaoLogin() {
+      await startSocialLogin('kakao');
+    }
+
+    async function startSocialLogin(provider) {
       const { data } = await supabaseClient.auth.getSession();
       if (data.session?.user) {
         await supabaseClient.auth.signOut();
@@ -413,7 +450,18 @@
       const consentAt = new Date().toISOString();
       localStorage.setItem(PROFILE_CONSENT_KEY, consentAt);
 
-      await supabaseClient.auth.signInWithOAuth({
+      const { error } = provider === 'kakao'
+        ? await signInWithKakao()
+        : await signInWithGoogle();
+
+      if (error) {
+        console.error(`${provider} sign-in failed:`, error);
+        window.alert(`${provider === 'kakao' ? 'Kakao' : 'Google'} sign-in failed. Please try again.`);
+      }
+    }
+
+    function signInWithGoogle() {
+      return supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: new URL('ppgis.html', window.location.href).href,
@@ -424,7 +472,29 @@
       });
     }
 
+    function signInWithKakao() {
+      return supabaseClient.auth.signInWithOAuth({
+        provider: 'kakao',
+        options: {
+          redirectTo: new URL('ppgis.html', window.location.href).href,
+          scopes: 'account_email profile_nickname'
+        }
+      });
+    }
+
     navAuth.addEventListener('click', async (event) => {
+      const provider = event.target.closest('[data-auth-provider]')?.dataset.authProvider;
+      if (provider) {
+        event.preventDefault();
+        closeSignInMenu();
+        if (provider === 'kakao') {
+          await startKakaoLogin();
+        } else {
+          await startGoogleLogin();
+        }
+        return;
+      }
+
       const profileButton = event.target.closest('.nav-profile-button');
       if (profileButton) {
         event.preventDefault();
@@ -434,7 +504,8 @@
 
       const action = event.target.closest('[data-auth-action]')?.dataset.authAction;
       if (action === 'sign-in') {
-        await startGoogleLogin();
+        event.preventDefault();
+        toggleSignInMenu(event.target.closest('[data-auth-action]'));
       }
       if (action === 'log-out') {
         await supabaseClient.auth.signOut();
@@ -446,6 +517,7 @@
     document.addEventListener('click', (event) => {
       if (!navAuth.contains(event.target)) {
         closeAccountMenu();
+        closeSignInMenu();
       }
     });
 
