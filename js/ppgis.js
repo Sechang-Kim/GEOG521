@@ -39,6 +39,7 @@ const I18N = {
     "common.agree": "I have read and agree",
     "common.decline": "I read but do not agree",
     "common.participant": "Participant",
+    "common.user": "User",
     "common.anonymous": "Anonymous",
     "nav.primary": "Primary navigation",
     "language.selector": "Language",
@@ -49,8 +50,15 @@ const I18N = {
     "auth.logout": "Log out",
     "auth.signedOut": "Signed out. Public submissions remain view-only.",
     "auth.signInRequired": "Sign In Required",
-    "auth.signInRequiredCopy": "Public submissions are open for viewing. To add your own log, sign in with Google after reviewing the research agreement.",
+    "auth.signInRequiredCopy": "Public submissions are open for viewing. To add your own log, sign in after reviewing the research agreement.",
     "auth.signIn": "Sign In",
+    "auth.providerMenu": "Choose a sign-in option",
+    "auth.google": "Google",
+    "auth.kakao": "Kakao",
+    "auth.continueGoogle": "Continue with Google",
+    "auth.continueKakao": "Continue with Kakao",
+    "auth.loginFailed": "{provider} sign-in failed. Please try again.",
+    "auth.emailMissing": "Your sign-in provider did not return an email address. You can keep viewing the map, but submission may require an email.",
     "auth.needSignInSubmit": "Sign in before submitting a log.",
     "auth.agreementRequired": "Agreement is required before adding logs. Public submissions remain view-only.",
     "map.aria": "Participatory GIS map",
@@ -248,6 +256,7 @@ const I18N = {
     "common.agree": "읽었고 동의합니다",
     "common.decline": "읽었지만 동의하지 않습니다",
     "common.participant": "참여자",
+    "common.user": "사용자",
     "common.anonymous": "익명",
     "nav.primary": "주요 메뉴",
     "language.selector": "언어 선택",
@@ -258,8 +267,15 @@ const I18N = {
     "auth.logout": "로그아웃",
     "auth.signedOut": "로그아웃되었습니다. 공개된 기록은 계속 볼 수 있습니다.",
     "auth.signInRequired": "로그인이 필요합니다",
-    "auth.signInRequiredCopy": "공개된 기록은 누구나 볼 수 있습니다. 직접 기록을 남기려면 연구 동의 내용을 확인한 뒤 Google 계정으로 로그인해 주세요.",
+    "auth.signInRequiredCopy": "공개된 기록은 누구나 볼 수 있습니다. 직접 기록을 남기려면 연구 동의 내용을 확인한 뒤 로그인해 주세요.",
     "auth.signIn": "로그인",
+    "auth.providerMenu": "로그인 방법 선택",
+    "auth.google": "Google",
+    "auth.kakao": "Kakao",
+    "auth.continueGoogle": "Google로 계속하기",
+    "auth.continueKakao": "Kakao로 계속하기",
+    "auth.loginFailed": "{provider} 로그인에 실패했습니다. 다시 시도해 주세요.",
+    "auth.emailMissing": "로그인 제공자에서 이메일 주소를 보내지 않았습니다. 지도는 계속 볼 수 있지만, 제출에는 이메일이 필요할 수 있습니다.",
     "auth.needSignInSubmit": "기록을 제출하려면 먼저 로그인해 주세요.",
     "auth.agreementRequired": "기록을 추가하려면 먼저 동의가 필요합니다. 공개된 기록은 계속 볼 수 있습니다.",
     "map.aria": "참여형 GIS 지도",
@@ -632,12 +648,17 @@ function dismissWelcomeFor24Hours() {
   closeWelcomeModal();
 }
 
-function userDisplayName(user = currentUser, profile = currentProfile) {
-  return profile?.full_name
-    || user?.user_metadata?.full_name
-    || user?.user_metadata?.name
+function deriveDisplayName(user = currentUser) {
+  const metadata = user?.user_metadata || {};
+  return metadata.full_name
+    || metadata.name
+    || metadata.nickname
     || user?.email?.split("@")[0]
-    || t("common.participant");
+    || t("common.user");
+}
+
+function userDisplayName(user = currentUser, profile = currentProfile) {
+  return profile?.full_name || deriveDisplayName(user);
 }
 
 function userInitial(user = currentUser) {
@@ -646,6 +667,12 @@ function userInitial(user = currentUser) {
 
 function userAvatarUrl(user = currentUser) {
   return user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
+}
+
+function warnIfUserEmailMissing(user = currentUser) {
+  if (!user || user.email) return;
+  console.warn("Signed-in user has no email address in Supabase Auth user object:", user.id);
+  setStatus(t("auth.emailMissing"), "error");
 }
 
 function resetMapViewStateForAuth(showOwnLogs = false) {
@@ -762,19 +789,51 @@ function closeAccountMenu() {
   });
 }
 
+function closeSignInMenu() {
+  navAuth.querySelectorAll(".nav-signin.is-open").forEach((signin) => {
+    signin.classList.remove("is-open");
+    signin.querySelector(".nav-auth-button")?.setAttribute("aria-expanded", "false");
+  });
+}
+
 function toggleAccountMenu(button) {
   const profile = button.closest(".nav-profile");
   if (!profile) return;
   const shouldOpen = !profile.classList.contains("is-open");
+  closeSignInMenu();
   closeAccountMenu();
   profile.classList.toggle("is-open", shouldOpen);
+  button.setAttribute("aria-expanded", String(shouldOpen));
+}
+
+function toggleSignInMenu(button) {
+  const signin = button.closest(".nav-signin");
+  if (!signin) return;
+  const shouldOpen = !signin.classList.contains("is-open");
+  closeAccountMenu();
+  closeSignInMenu();
+  signin.classList.toggle("is-open", shouldOpen);
   button.setAttribute("aria-expanded", String(shouldOpen));
 }
 
 function closeAccountMenuOnOutsideClick(event) {
   if (!navAuth.contains(event.target)) {
     closeAccountMenu();
+    closeSignInMenu();
   }
+}
+
+function authProviderButtonsHtml(className = "ppgis-auth-options") {
+  return `
+    <div class="${className}" aria-label="${escapeHtml(t("auth.providerMenu"))}">
+      <button class="auth-provider-button auth-provider-google" type="button" data-auth-provider="google" data-i18n="auth.continueGoogle">
+        ${escapeHtml(t("auth.continueGoogle"))}
+      </button>
+      <button class="auth-provider-button auth-provider-kakao" type="button" data-auth-provider="kakao" data-i18n="auth.continueKakao">
+        ${escapeHtml(t("auth.continueKakao"))}
+      </button>
+    </div>
+  `;
 }
 
 function setAuthStatus() {
@@ -798,11 +857,21 @@ function setAuthStatus() {
     `;
   } else {
     navAuth.innerHTML = `
-      <button class="nav-auth-button" type="button" data-auth-action="sign-in" aria-label="${escapeHtml(t("auth.signAria"))}">
-        <span class="nav-auth-full">${escapeHtml(t("auth.signFull"))}</span>
-        <span class="nav-auth-short">${escapeHtml(t("auth.signShort"))}</span>
-        <span class="nav-auth-icon" aria-hidden="true">S</span>
-      </button>
+      <div class="nav-signin">
+        <button class="nav-auth-button" type="button" data-auth-action="sign-in" aria-haspopup="true" aria-expanded="false" aria-label="${escapeHtml(t("auth.signAria"))}">
+          <span class="nav-auth-full">${escapeHtml(t("auth.signFull"))}</span>
+          <span class="nav-auth-short">${escapeHtml(t("auth.signShort"))}</span>
+          <span class="nav-auth-icon" aria-hidden="true">S</span>
+        </button>
+        <div class="nav-signin-menu" role="menu" aria-label="${escapeHtml(t("auth.providerMenu"))}">
+          <button class="nav-provider-button nav-provider-google" type="button" data-auth-provider="google" role="menuitem">
+            ${escapeHtml(t("auth.continueGoogle"))}
+          </button>
+          <button class="nav-provider-button nav-provider-kakao" type="button" data-auth-provider="kakao" role="menuitem">
+            ${escapeHtml(t("auth.continueKakao"))}
+          </button>
+        </div>
+      </div>
     `;
   }
 }
@@ -852,6 +921,7 @@ async function refreshAuthState() {
 
   const sessionUser = sessionData?.session?.user || null;
   applyCurrentUser(sessionUser, { resetView: true });
+  warnIfUserEmailMissing(sessionUser);
   await loadApprovedSubmissions();
 
   syncCurrentProfile(currentUser)
@@ -870,15 +940,29 @@ async function refreshAuthState() {
 
   if (userData?.user) {
     applyCurrentUser(userData.user);
+    warnIfUserEmailMissing(userData.user);
   }
 }
 
 async function handleAuthNavClick(event) {
+  const provider = event.target.closest("[data-auth-provider]")?.dataset.authProvider;
+  if (provider) {
+    event.preventDefault();
+    event.stopPropagation();
+    closeSignInMenu();
+    if (provider === "kakao") {
+      await startKakaoLogin();
+    } else {
+      await startGoogleLogin();
+    }
+    return;
+  }
+
   const action = event.target.closest("[data-auth-action]")?.dataset.authAction;
   if (action === "sign-in") {
     event.preventDefault();
     event.stopPropagation();
-    await startGoogleLogin();
+    toggleSignInMenu(event.target.closest("[data-auth-action]"));
     return;
   }
 
@@ -981,6 +1065,14 @@ function showResearchConsentDialog() {
 }
 
 async function startGoogleLogin() {
+  await startSocialLogin("google");
+}
+
+async function startKakaoLogin() {
+  await startSocialLogin("kakao");
+}
+
+async function startSocialLogin(provider) {
   const agreed = await showResearchConsentDialog();
   if (!agreed) {
     setStatus(t("auth.agreementRequired"), "error");
@@ -989,13 +1081,38 @@ async function startGoogleLogin() {
 
   localStorage.setItem(PROFILE_CONSENT_KEY, new Date().toISOString());
 
-  await supabaseClient.auth.signInWithOAuth({
+  try {
+    const { error } = provider === "kakao"
+      ? await signInWithKakao()
+      : await signInWithGoogle();
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    const providerName = provider === "kakao" ? t("auth.kakao") : t("auth.google");
+    console.error(`${providerName} sign-in failed:`, error);
+    setStatus(t("auth.loginFailed", { provider: providerName }), "error");
+  }
+}
+
+function signInWithGoogle() {
+  return supabaseClient.auth.signInWithOAuth({
     provider: "google",
     options: {
       redirectTo: new URL("ppgis.html", window.location.href).href,
       queryParams: {
         prompt: "select_account"
       }
+    }
+  });
+}
+
+function signInWithKakao() {
+  return supabaseClient.auth.signInWithOAuth({
+    provider: "kakao",
+    options: {
+      redirectTo: window.location.href
     }
   });
 }
@@ -1329,10 +1446,10 @@ function openSubmissionForm(lat, lng) {
     setStatus(t("auth.signInRequiredCopy"));
     openPopover(`
       <article class="ppgis-public-popup">
-        <button class="ppgis-popover-close" type="button" aria-label="${escapeHtml(t("common.close"))}">&times;</button>
-        <h3>${escapeHtml(t("auth.signInRequired"))}</h3>
-        <p>${escapeHtml(t("auth.signInRequiredCopy"))}</p>
-        <button class="ppgis-auth-link" type="button">${escapeHtml(t("auth.signIn"))}</button>
+        <button class="ppgis-popover-close" type="button" aria-label="${escapeHtml(t("common.close"))}" data-i18n-aria-label="common.close">&times;</button>
+        <h3 data-i18n="auth.signInRequired">${escapeHtml(t("auth.signInRequired"))}</h3>
+        <p data-i18n="auth.signInRequiredCopy">${escapeHtml(t("auth.signInRequiredCopy"))}</p>
+        ${authProviderButtonsHtml()}
       </article>
     `);
     return;
@@ -2189,6 +2306,16 @@ popover.addEventListener("click", async (event) => {
     return;
   }
 
+  const authProviderButton = event.target.closest("[data-auth-provider]");
+  if (authProviderButton) {
+    if (authProviderButton.dataset.authProvider === "kakao") {
+      startKakaoLogin();
+    } else {
+      startGoogleLogin();
+    }
+    return;
+  }
+
   if (event.target.closest(".ppgis-auth-link")) {
     startGoogleLogin();
     return;
@@ -2689,6 +2816,7 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
 
   const shouldResetView = event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_DELETED";
   applyCurrentUser(session?.user || null, { resetView: shouldResetView });
+  warnIfUserEmailMissing(session?.user || null);
   await loadApprovedSubmissions();
   syncCurrentProfile(currentUser)
     .then(setAuthStatus)
