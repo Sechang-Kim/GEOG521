@@ -452,8 +452,8 @@
   left: 48px;
   top: 100px;
   z-index: 13;
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   padding: 0;
   font-size: 1.36rem;
   line-height: 1;
@@ -461,8 +461,8 @@
 }
 
 .ppgis-locate-fab img {
-  width: 22px;
-  height: 22px;
+  width: 25px;
+  height: 25px;
   display: block;
   object-fit: contain;
   pointer-events: none;
@@ -535,6 +535,7 @@
   right: 10px;
   width: 30px;
   height: 30px;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -546,6 +547,8 @@
   line-height: 1;
   padding: 0;
   cursor: pointer;
+  box-sizing: border-box;
+  aspect-ratio: 1;
 }
 
 .ppgis-popover-close:hover,
@@ -557,7 +560,7 @@
 
 .ppgis-auth-link,
 .ppgis-auth-tool button,
-.ppgis-popup-form button {
+.ppgis-popup-form button:not(.ppgis-popover-close) {
   min-height: 40px;
   padding: 0 14px;
   color: var(--white);
@@ -573,8 +576,8 @@
 .ppgis-auth-link:focus-visible,
 .ppgis-auth-tool button:hover,
 .ppgis-auth-tool button:focus-visible,
-.ppgis-popup-form button:hover,
-.ppgis-popup-form button:focus-visible {
+.ppgis-popup-form button:not(.ppgis-popover-close):hover,
+.ppgis-popup-form button:not(.ppgis-popover-close):focus-visible {
   background: var(--accent-dark);
   outline: none;
 }
@@ -659,18 +662,16 @@
   border-radius: 4px;
 }
 
-#ppgisPopupMap .leaflet-control-layers:not(:hover):not(:focus-within) {
+#ppgisPopupMap .leaflet-control-layers:not(.leaflet-control-layers-expanded) {
   width: 44px;
   height: 44px;
 }
 
-#ppgisPopupMap .leaflet-control-layers:not(:hover):not(:focus-within) .leaflet-control-layers-list,
-#ppgisPopupMap .leaflet-control-layers:not(:hover):not(:focus-within) .leaflet-control-layers-separator {
+#ppgisPopupMap .leaflet-control-layers:not(.leaflet-control-layers-expanded) .leaflet-control-layers-list,
+#ppgisPopupMap .leaflet-control-layers:not(.leaflet-control-layers-expanded) .leaflet-control-layers-separator {
   display: none;
 }
 
-#ppgisPopupMap .leaflet-control-layers:hover,
-#ppgisPopupMap .leaflet-control-layers:focus-within,
 #ppgisPopupMap .leaflet-control-layers-expanded {
   width: auto;
   height: auto;
@@ -860,7 +861,7 @@
   background: rgba(238, 244, 241, 0.76);
   border: 1px solid var(--line);
   border-radius: 6px;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   font-weight: 850;
   line-height: 1.1;
   text-align: center;
@@ -881,6 +882,7 @@
 .ppgis-popup-form h3,
 .ppgis-public-popup h3 {
   margin: 0;
+  padding-right: 34px;
   color: var(--ink);
   font-size: 1.05rem;
 }
@@ -1648,6 +1650,23 @@
     }
   }
 
+  .ppgis-map-page .nav-bar.nav-logo-layout {
+    width: calc(100% - 4px);
+    grid-template-columns: minmax(60px, 0.76fr) minmax(154px, auto) minmax(42px, 0.76fr);
+    gap: 2px;
+    min-height: 54px;
+  }
+
+  .ppgis-map-page .nav-logo {
+    width: clamp(154px, 50vw, 212px);
+    height: clamp(42px, 12vw, 52px);
+    object-fit: contain;
+  }
+
+  .ppgis-map-page .nav-auth {
+    gap: 3px;
+  }
+
   .ppgis-map-page .nav-map-view-menu {
     width: min(270px, calc(100vw - 16px));
     max-height: min(70vh, 480px);
@@ -1661,13 +1680,13 @@
 
   .ppgis-map-page .nav-language {
     gap: 3px;
-    padding: 3px 4px;
+    padding: 2px 3px;
   }
 
   .ppgis-map-page .language-option {
-    min-height: 26px;
-    padding: 0 6px;
-    font-size: 0.66rem;
+    min-height: 25px;
+    padding: 0 5px;
+    font-size: 0.64rem;
   }
 
   .ppgis-popup-shell {
@@ -1717,11 +1736,16 @@
   }
 
   .ppgis-popover:has(.ppgis-popup-form) .ppgis-popover-close {
-    top: 3px;
-    right: 3px;
-    width: 24px;
-    height: 24px;
-    font-size: 1.3rem;
+    top: 6px;
+    right: 6px;
+    width: 26px;
+    height: 26px;
+    min-height: 0;
+    padding: 0;
+    color: var(--white);
+    background: var(--accent);
+    border-radius: 6px;
+    font-size: 1.28rem;
   }
 
   .ppgis-full-map {
@@ -1757,7 +1781,7 @@
   .ppgis-step-progress span {
     min-height: 24px;
     padding: 3px 2px;
-    font-size: 0.54rem;
+    font-size: 0.62rem;
   }
 
   .form-step-actions {
@@ -1804,6 +1828,7 @@
 
   .ppgis-popup-form h3 {
     font-size: 0.98rem;
+    padding-right: 34px;
   }
 
   .ppgis-popup-form > .popup-form-message:first-of-type {
@@ -1843,20 +1868,31 @@
   }
 
   .form-step-actions button,
-  .ppgis-popup-form button {
+  .ppgis-popup-form button:not(.ppgis-popover-close) {
     min-height: 38px;
   }
 }
 
 @media (max-width: 360px) {
+  .ppgis-map-page .nav-bar.nav-logo-layout {
+    width: calc(100% - 2px);
+    grid-template-columns: minmax(54px, 0.7fr) minmax(142px, auto) minmax(36px, 0.7fr);
+    gap: 1px;
+  }
+
+  .ppgis-map-page .nav-logo {
+    width: clamp(142px, 47vw, 166px);
+    height: 42px;
+  }
+
   .ppgis-map-page .nav-language {
     gap: 2px;
-    padding: 2px 3px;
+    padding: 2px;
   }
 
   .ppgis-map-page .language-option {
-    min-height: 24px;
-    padding: 0 5px;
+    min-height: 23px;
+    padding: 0 4px;
     font-size: 0.58rem;
   }
 }
