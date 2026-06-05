@@ -11,6 +11,7 @@ const PROFILE_CONSENT_KEY = "ppgisResearchConsentAccepted";
 const WELCOME_DISMISSED_KEY = "ppgisWelcomeDismissedUntil";
 const LANGUAGE_KEY = "ppgisLanguage";
 const DEFAULT_MARKER_COLOR = "#ff7f00";
+const VWORLD_API_KEY = "4949D4A3-F27B-3EB5-AFB9-5DB158DCD73F";
 const SUBMISSION_MARKER_SIZE_BY_ZOOM = [
   { maxZoom: 5, radius: 2.8, ownerRadius: 3.2, secretRadius: 3.2, weight: 1, ownerWeight: 1.15 },
   { maxZoom: 8, radius: 3.4, ownerRadius: 3.8, secretRadius: 3.8, weight: 1.15, ownerWeight: 1.35 },
@@ -561,15 +562,48 @@ const baseLayerTiles = {
   satellite: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 19,
     attribution: "Tiles &copy; Esri"
+  }),
+  vworldBase: L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_API_KEY}/Base/{z}/{y}/{x}.png`, {
+    minZoom: 6,
+    maxZoom: 19,
+    attribution: "&copy; VWorld"
+  }),
+  vworldSatellite: L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_API_KEY}/Satellite/{z}/{y}/{x}.jpeg`, {
+    minZoom: 6,
+    maxZoom: 19,
+    attribution: "&copy; VWorld"
+  }),
+  vworldHybrid: L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_API_KEY}/Hybrid/{z}/{y}/{x}.png`, {
+    minZoom: 6,
+    maxZoom: 19,
+    attribution: "&copy; VWorld"
   })
 };
 let baseLayerControl = null;
+let hasShownVWorldTileWarning = false;
+
+function showVWorldTileWarning() {
+  if (hasShownVWorldTileWarning) return;
+  hasShownVWorldTileWarning = true;
+  setStatus("VWorld basemap may be unavailable outside Korea. Please switch to OSM or CARTO.", "error");
+}
+
+[
+  baseLayerTiles.vworldBase,
+  baseLayerTiles.vworldSatellite,
+  baseLayerTiles.vworldHybrid
+].forEach((layer) => {
+  layer.on("tileerror", showVWorldTileWarning);
+});
 
 function translatedBaseLayers() {
   return {
     [t("basemap.openStreetMap")]: baseLayerTiles.openStreetMap,
     [t("basemap.cartoLight")]: baseLayerTiles.cartoLight,
-    [t("basemap.satellite")]: baseLayerTiles.satellite
+    [t("basemap.satellite")]: baseLayerTiles.satellite,
+    "VWorld Base": baseLayerTiles.vworldBase,
+    "VWorld Satellite": baseLayerTiles.vworldSatellite,
+    "VWorld Hybrid": baseLayerTiles.vworldHybrid
   };
 }
 
