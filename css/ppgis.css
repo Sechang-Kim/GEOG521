@@ -1682,7 +1682,18 @@
   }
 
   .ppgis-popover:has(.ppgis-popup-form) {
-    overflow: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .log-panel .save-log-button {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    width: 100%;
+    min-height: 40px !important;
+    box-shadow: 0 -8px 16px rgba(255, 255, 255, 0.88);
   }
 
   .ppgis-popup-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),

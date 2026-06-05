@@ -87,6 +87,7 @@ let currentUser = null;
 let currentProfile = null;
 let activeContentType = null;
 let mapRenderRequestId = 0;
+let authRefreshRequestId = 0;
 const mapViewState = {
   publicLogs: true,
   myLogs: false,
@@ -334,17 +335,35 @@ async function syncCurrentProfile(user) {
 }
 
 async function refreshAuthState() {
-  const { data, error } = await supabaseClient.auth.getUser();
-  if (error) {
-    console.warn("Could not verify signed-in user:", error);
+  const requestId = ++authRefreshRequestId;
+  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+  if (requestId !== authRefreshRequestId) return;
+
+  if (sessionError) {
+    console.warn("Could not read sign-in session:", sessionError);
   }
 
-  applyCurrentUser(data?.user || null, { resetView: true });
+  const sessionUser = sessionData?.session?.user || null;
+  applyCurrentUser(sessionUser, { resetView: true });
   await loadApprovedSubmissions();
 
   syncCurrentProfile(currentUser)
     .then(setAuthStatus)
     .catch((error) => console.warn("Could not sync profile:", error));
+
+  if (!sessionUser) return;
+
+  const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+  if (requestId !== authRefreshRequestId) return;
+
+  if (userError) {
+    console.warn("Could not verify signed-in user:", userError);
+    return;
+  }
+
+  if (userData?.user) {
+    applyCurrentUser(userData.user);
+  }
 }
 
 async function handleAuthNavClick(event) {
@@ -2016,8 +2035,11 @@ async function handleEditSubmission(form) {
   if (submitButton) submitButton.disabled = false;
 }
 
-supabaseClient.auth.onAuthStateChange(async (_event, session) => {
-  applyCurrentUser(session?.user || null);
+supabaseClient.auth.onAuthStateChange(async (event, session) => {
+  if (event === "INITIAL_SESSION") return;
+
+  const shouldResetView = event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_DELETED";
+  applyCurrentUser(session?.user || null, { resetView: shouldResetView });
   await loadApprovedSubmissions();
   syncCurrentProfile(currentUser)
     .then(setAuthStatus)
