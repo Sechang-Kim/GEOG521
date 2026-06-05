@@ -232,6 +232,22 @@ a {
   transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
 
+.nav-auth-short,
+.nav-auth-icon {
+  display: none;
+}
+
+.nav-auth-icon {
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  color: var(--white);
+  background: var(--accent);
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
 .nav-auth-button:hover,
 .nav-auth-button:focus-visible {
   background: rgba(255, 255, 255, 0.2);
@@ -2057,9 +2073,17 @@ h3 {
 
   .nav-auth-button {
     min-height: 34px;
-    padding: 0 7px;
-    font-size: 0.7rem;
+    padding: 0 8px;
+    font-size: 0.72rem;
     line-height: 1;
+  }
+
+  .nav-auth-full {
+    display: none;
+  }
+
+  .nav-auth-short {
+    display: inline;
   }
 
   .nav-profile-button {
@@ -2133,8 +2157,18 @@ h3 {
   }
 
   .nav-auth-button {
-    min-height: 32px;
-    padding: 0 6px;
-    font-size: 0.64rem;
+    width: 34px;
+    min-height: 34px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+  }
+
+  .nav-auth-short {
+    display: none;
+  }
+
+  .nav-auth-icon {
+    display: grid;
   }
 }

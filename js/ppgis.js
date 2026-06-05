@@ -1,11 +1,15 @@
 const SUPABASE_URL = "https://ovubnhmmonnrywhktjax.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2JgXPdRqSLmQ1YYKFUp7iA_rndlY_Jr";
 const MEDIA_BUCKET = "ppgis-media";
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const MAX_PHOTO_BYTES = 50 * 1024 * 1024;
+const MAX_COMPRESSED_PHOTO_BYTES = 10 * 1024 * 1024;
+const PHOTO_MAX_EDGE_PX = 1600;
+const PHOTO_JPEG_QUALITY = 0.82;
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 const TURNSTILE_SITE_KEY = "0x4AAAAAADdPqMVnjCWpuPM3";
 const PROFILE_CONSENT_KEY = "ppgisResearchConsentAccepted";
 const WELCOME_DISMISSED_KEY = "ppgisWelcomeDismissedUntil";
+const LANGUAGE_KEY = "ppgisLanguage";
 const DEFAULT_MARKER_COLOR = "#ff7f00";
 const MEDIA_UPLOAD_TIMEOUT_MS = 45000;
 const FUNCTION_TIMEOUT_MS = 30000;
@@ -22,6 +26,478 @@ const MARKER_COLOR_OPTIONS = [
   "#6a3d9a"
 ];
 
+const I18N = {
+  en: {
+    "common.close": "Close",
+    "common.cancel": "Cancel",
+    "common.agree": "I have read and agree",
+    "common.decline": "I read but do not agree",
+    "common.participant": "Participant",
+    "common.anonymous": "Anonymous",
+    "nav.primary": "Primary navigation",
+    "language.selector": "Language",
+    "auth.signFull": "Sign in / Sign up",
+    "auth.signShort": "Sign in",
+    "auth.signAria": "Sign in or sign up",
+    "auth.account": "Account menu",
+    "auth.logout": "Log out",
+    "auth.signedOut": "Signed out. Public submissions remain view-only.",
+    "auth.signInRequired": "Sign In Required",
+    "auth.signInRequiredCopy": "Public submissions are open for viewing. To add your own log, sign in with Google after reviewing the research agreement.",
+    "auth.signIn": "Sign In",
+    "auth.needSignInSubmit": "Sign in before submitting a log.",
+    "auth.agreementRequired": "Agreement is required before adding logs. Public submissions remain view-only.",
+    "map.aria": "Participatory GIS map",
+    "welcome.aria": "Participatory GIS instructions",
+    "welcome.eyebrow": "Participatory GIS",
+    "welcome.title": "Share a Place-Based Story",
+    "welcome.copy": "Click the map to place a marker. Signed-in users can submit a title, story, and anonymity choice. Visitors who are not signed in can view approved public submissions.",
+    "welcome.hide24": "Do not show for 24 hours",
+    "location.use": "Use my location",
+    "location.unsupported": "This browser does not support location services.",
+    "location.confirm": "Allow this site to use your current location?",
+    "location.requesting": "Requesting your location...",
+    "location.popup": "Your current location",
+    "location.found": "Location found and shown on the map.",
+    "location.denied": "Location permission was denied.",
+    "location.failed": "Could not find your current location.",
+    "basemap.openStreetMap": "OpenStreetMap",
+    "basemap.cartoLight": "CARTO Light",
+    "basemap.satellite": "Satellite Imagery",
+    "view.showOnMap": "Show on Map",
+    "view.menuAria": "Account and map visibility",
+    "view.public": "Public Logs",
+    "view.mine": "My Logs",
+    "view.shared": "Shared",
+    "view.secret": "Secret",
+    "view.secretHelp": "Not shown on the public map.",
+    "consent.researchTitle": "Consent to Submit Your Data",
+    "consent.researchCopy1": "This form collects your name, email, photo, story, voice/audio, text, and volunteered geographic information for this PPGIS research project.",
+    "consent.researchCopy2": "You may choose whether your post is visible to other visitors. Even if it is hidden from public display, the submitted data will be stored in the master database owned and administered by Sechang Kim. Contact: vs5345@uw.edu.",
+    "consent.researchCopy3": "Please do not submit anything you do not want the researcher to store. You can continue viewing the public map without signing in.",
+    "consent.interviewTitle": "Additional Interview Contact",
+    "consent.interviewCopy": "A researcher may contact you by email in the future to request an additional interview. You may decline if you do not wish to participate, and not responding will be treated as declining. Even if you accept an interview request, you may cancel or stop the interview at any time.",
+    "popup.secretBadge": "Secret",
+    "popup.sharedBadge": "Shared",
+    "popup.notPublic": "Not shown on the public map.",
+    "popup.hiddenText": "This participant chose not to show the text publicly.",
+    "popup.noStory": "No story provided.",
+    "popup.untitled": "Untitled place",
+    "popup.submittedBy": "Submitted by:",
+    "popup.submittedPhoto": "Submitted photo",
+    "popup.editLog": "Edit this log",
+    "popup.deleteLog": "Delete this log",
+    "popup.markerColor": "Marker color",
+    "popup.showText": "Show my text to other users",
+    "popup.story": "Story",
+    "popup.saveChanges": "Save Changes",
+    "popup.deletePassword": "Delete password",
+    "popup.deletePasswordHelp": "Enter the 6-digit password you set when submitting this log.",
+    "popup.deletePermanently": "Delete Permanently",
+    "popup.youAnonymous": "You (anonymous publicly)",
+    "form.draftPlaced": "Draft marker placed. Complete the form on the right.",
+    "form.selectionCleared": "Selection cleared.",
+    "form.title": "Submit This Place",
+    "form.selectedLocation": "Selected location: {lat}, {lng}",
+    "form.step1": "Place",
+    "form.step2": "Log",
+    "form.step3": "Content",
+    "form.step4": "Sharing",
+    "form.step5": "Submit",
+    "form.stepLabel1": "Step 1 of 5",
+    "form.stepLabel2": "Step 2 of 5",
+    "form.stepLabel3": "Step 3 of 5",
+    "form.stepLabel4": "Step 4 of 5",
+    "form.stepLabel5": "Step 5 of 5",
+    "form.submissionProgress": "Submission progress",
+    "form.placeTitle": "Name This Place",
+    "form.placeHelp": "Use a short title that helps others understand the place you marked.",
+    "form.submittingAs": "Submitting as {name} ({email}). Your login name and email are stored in the master database.",
+    "form.noEmail": "no email",
+    "form.anonymousPublic": "Anonymous on the public map",
+    "form.titleField": "Title",
+    "form.shortTitle": "Short title for this place",
+    "form.chooseLog": "Choose What to Log",
+    "form.chooseLogHelp": "Choose one log type, save it, then return here. Saved logs turn green. You can add more than one type.",
+    "form.chooseLogAria": "Choose log type",
+    "form.text": "Text",
+    "form.photo": "Photo",
+    "form.audio": "Audio",
+    "form.notSaved": "Not saved",
+    "form.saved": "Saved",
+    "form.choiceNone": "Save at least one text, photo, or audio log before continuing.",
+    "form.choiceSaved": "{count} saved. You can add another log type or continue to sharing.",
+    "form.contentTitle": "Add and Save Content",
+    "form.contentTitleForType": "Add and Save {label}",
+    "form.contentHelp": "Save this log type before returning to the log choices.",
+    "form.textLog": "Text Log",
+    "form.photoLog": "Photo Log",
+    "form.audioLog": "Audio Log",
+    "form.contentSavedHelp": "{label} is saved. Tap Done to return to log choices.",
+    "form.contentUnsavedHelp": "Save this {label} before returning to log choices.",
+    "form.textPlaceholder": "Describe this place or experience",
+    "form.saveText": "Save Text",
+    "form.noText": "No text saved.",
+    "form.gallery": "Go to Gallery",
+    "form.camera": "Go to Camera",
+    "form.savePhoto": "Save Photo",
+    "form.noPhoto": "No photo selected.",
+    "form.uploadAudio": "Upload Audio File",
+    "form.recordAudio": "Record Audio",
+    "form.startRecording": "Start Recording",
+    "form.stopRecording": "Stop Recording",
+    "form.saveAudio": "Save Audio",
+    "form.noAudio": "No audio selected or recorded.",
+    "form.sharingTitle": "Sharing",
+    "form.sharingHelp": "Choose what appears on the public map. Private items are stored for project administration but are not shown publicly.",
+    "form.sharePublic": "Share this log publicly",
+    "form.showText": "Show my text to other users",
+    "form.showPhoto": "Show my photo to other users",
+    "form.showAudio": "Show my audio to other users",
+    "form.privateHelp": "If the log, location, text, photo, or audio is not shared publicly, only the administrator can view that saved data.",
+    "form.submitTitle": "Submit",
+    "form.editPassword": "Edit/Delete password",
+    "form.required": "required",
+    "form.optional": "optional",
+    "form.passwordHelp": "Use this 6-digit numeric password if you want to edit or delete this log later.",
+    "form.passwordPlaceholder": "6 digits",
+    "form.submitButton": "Submit Saved Log",
+    "form.back": "Back",
+    "form.next": "Next",
+    "form.nextLog": "Next: Log Type",
+    "form.nextSharing": "Next: Sharing",
+    "form.nextSubmit": "Next: Submit",
+    "form.doneChoices": "Done: Back to Log Choices",
+    "form.done": "Done",
+    "form.saveFirst": "Save First",
+    "status.addTextBeforeSave": "Add text before saving.",
+    "status.textSaved": "Text saved.",
+    "status.choosePhoto": "Choose or take a photo before saving.",
+    "status.photoPreparing": "Resizing and compressing photo from {size}...",
+    "status.photoSaved": "Photo saved: {size} JPEG, longest edge {edge}px.",
+    "status.photoSelected": "Selected photo: {name}. Save Photo to include it.",
+    "status.photoNone": "No photo selected.",
+    "status.audioSelected": "Selected audio: {name}. Save Audio to include it.",
+    "status.audioNone": "No audio selected or recorded.",
+    "status.audioSaved": "Audio saved: {name}",
+    "status.audioRecorded": "Recorded audio ready: {name}. Save Audio to include it.",
+    "status.recording": "Recording audio...",
+    "status.textChanged": "Draft changed. Save Text to include it.",
+    "status.chooseAudio": "Upload or record audio before saving.",
+    "status.preparing": "Preparing submission...",
+    "status.uploadPhoto": "Uploading photo...",
+    "status.uploadAudio": "Uploading audio...",
+    "status.submitting": "Submitting saved log...",
+    "status.receivedReloading": "Submission received. Reloading map...",
+    "status.mediaUploadFailed": "Submission stopped because media upload failed: {message}",
+    "status.submissionFailed": "Submission failed: {message}",
+    "status.loadPublicFailed": "Could not load public logs: {message}",
+    "status.loadMineFailed": "Could not load your logs: {message}",
+    "status.deleteFailed": "Delete failed: {message}",
+    "status.deleteWorking": "Deleting and updating map...",
+    "status.deleteComplete": "Deleting Complete",
+    "status.editFailed": "Edit failed: {message}",
+    "status.editWorking": "Editing and updating map...",
+    "status.editComplete": "Editing Complete",
+    "validation.titleRequired": "Title is required.",
+    "validation.titleBeforeNext": "Add a short title before continuing.",
+    "validation.passwordSix": "Edit/delete password must be exactly 6 numeric digits.",
+    "validation.deletePassword": "Enter the 6-digit delete password.",
+    "validation.editPassword": "Enter the 6-digit edit password.",
+    "validation.chooseOne": "Choose at least one log type before submitting.",
+    "validation.saveLogFirst": "Save a log first.",
+    "validation.saveCurrentType": "Save this log type before returning to the log choices.",
+    "validation.saveText": "Save your text before submitting.",
+    "validation.savePhoto": "Save your photo before submitting.",
+    "validation.saveAudio": "Save your audio before submitting.",
+    "validation.saveOne": "Save at least one log component before submitting.",
+    "validation.turnstileAlert": "Please complete the verification before submitting.",
+    "validation.turnstile": "Complete the verification before submitting.",
+    "validation.interviewDeclined": "You can continue viewing the map, but this submission was not saved because the interview contact notice was declined.",
+    "validation.photoTooLarge": "Photo file must be smaller than {size} before compression.",
+    "validation.notImage": "Choose an image file before saving.",
+    "validation.photoReadFailed": "This photo format could not be read by the browser. Use a JPEG or PNG photo, or export the image before uploading.",
+    "validation.photoDimensions": "Could not read the photo dimensions.",
+    "validation.photoPrepare": "Could not prepare the photo for upload.",
+    "validation.photoCompress": "Could not compress the photo.",
+    "validation.compressedTooLarge": "Compressed photo must be {size} or smaller.",
+    "validation.fileSize": "{type} file must be {size} or smaller.",
+    "validation.fileTooLarge": "File size exceeds limit",
+    "validation.uploadFailed": "Could not upload {type}: {message}",
+    "validation.audioUnsupported": "In-browser audio recording is not supported by this browser. Please upload an audio file instead.",
+    "validation.audioStartFailed": "Could not start audio recording. Please check microphone permission or upload an audio file.",
+    "validation.signAgain": "Sign in again before submitting.",
+    "validation.submitTimeout": "Submission request timed out after 30 seconds. Check the submit-ppgis-log Edge Function logs.",
+    "confirm.delete": "Delete this log permanently?",
+    "alert.publicReceived": "Submission received. It is visible to you now and will appear on the public map after approval.",
+    "alert.secretReceived": "Submission received. It is saved as a secret log and is visible to you now.",
+    "error.unknownFunction": "Unknown Edge Function error.",
+    "error.submitFunction": "Could not reach the submission function.",
+    "error.deleteFunction": "Could not reach the delete function.",
+    "error.editFunction": "Could not reach the edit function."
+  },
+  ko: {
+    "common.close": "닫기",
+    "common.cancel": "취소",
+    "common.agree": "읽었고 동의합니다",
+    "common.decline": "읽었지만 동의하지 않습니다",
+    "common.participant": "참여자",
+    "common.anonymous": "익명",
+    "nav.primary": "주요 메뉴",
+    "language.selector": "언어 선택",
+    "auth.signFull": "로그인 / 가입",
+    "auth.signShort": "로그인",
+    "auth.signAria": "로그인 또는 가입",
+    "auth.account": "계정 메뉴",
+    "auth.logout": "로그아웃",
+    "auth.signedOut": "로그아웃되었습니다. 공개된 기록은 계속 볼 수 있습니다.",
+    "auth.signInRequired": "로그인이 필요합니다",
+    "auth.signInRequiredCopy": "공개된 기록은 누구나 볼 수 있습니다. 직접 기록을 남기려면 연구 동의 내용을 확인한 뒤 Google 계정으로 로그인해 주세요.",
+    "auth.signIn": "로그인",
+    "auth.needSignInSubmit": "기록을 제출하려면 먼저 로그인해 주세요.",
+    "auth.agreementRequired": "기록을 추가하려면 먼저 동의가 필요합니다. 공개된 기록은 계속 볼 수 있습니다.",
+    "map.aria": "참여형 GIS 지도",
+    "welcome.aria": "참여형 GIS 안내",
+    "welcome.eyebrow": "참여형 GIS",
+    "welcome.title": "장소에 얽힌 이야기를 나눠 주세요",
+    "welcome.copy": "지도에서 원하는 장소를 눌러 마커를 놓아 주세요. 로그인한 사용자는 제목, 이야기, 익명 여부를 선택해 기록을 제출할 수 있습니다. 로그인하지 않은 방문자는 승인된 공개 기록을 볼 수 있습니다.",
+    "welcome.hide24": "24시간 동안 보지 않기",
+    "location.use": "내 위치 사용",
+    "location.unsupported": "이 브라우저에서는 위치 서비스를 사용할 수 없습니다.",
+    "location.confirm": "현재 위치를 사용해도 괜찮을까요?",
+    "location.requesting": "현재 위치를 확인하는 중입니다...",
+    "location.popup": "현재 내 위치",
+    "location.found": "현재 위치를 지도에 표시했습니다.",
+    "location.denied": "위치 권한이 거부되었습니다.",
+    "location.failed": "현재 위치를 찾지 못했습니다.",
+    "basemap.openStreetMap": "OpenStreetMap",
+    "basemap.cartoLight": "밝은 지도",
+    "basemap.satellite": "위성 지도",
+    "view.showOnMap": "지도에 표시",
+    "view.menuAria": "계정 및 지도 표시 설정",
+    "view.public": "공개 기록",
+    "view.mine": "내 기록",
+    "view.shared": "공유한 기록",
+    "view.secret": "비공개 기록",
+    "view.secretHelp": "공개 지도에는 보이지 않습니다.",
+    "consent.researchTitle": "데이터 제출 동의",
+    "consent.researchCopy1": "이 양식은 PPGIS 연구를 위해 이름, 이메일, 사진, 이야기, 음성/오디오, 텍스트, 그리고 자발적으로 제공한 위치 정보를 수집합니다.",
+    "consent.researchCopy2": "내 게시물이 다른 방문자에게 보일지 선택할 수 있습니다. 공개 표시를 하지 않더라도 제출된 데이터는 Sechang Kim이 소유하고 관리하는 연구용 데이터베이스에 저장됩니다. 문의: vs5345@uw.edu.",
+    "consent.researchCopy3": "연구자가 저장하길 원하지 않는 내용은 제출하지 마세요. 로그인하지 않아도 공개 지도는 계속 볼 수 있습니다.",
+    "consent.interviewTitle": "추가 인터뷰 연락 안내",
+    "consent.interviewCopy": "향후 연구자가 이메일로 추가 인터뷰를 요청할 수 있습니다. 원하지 않으면 거절해도 되고, 응답하지 않으면 거절한 것으로 간주합니다. 인터뷰를 수락했더라도 언제든지 취소하거나 중단할 수 있습니다.",
+    "popup.secretBadge": "비공개",
+    "popup.sharedBadge": "공유됨",
+    "popup.notPublic": "공개 지도에는 보이지 않습니다.",
+    "popup.hiddenText": "작성자가 텍스트를 공개하지 않기로 선택했습니다.",
+    "popup.noStory": "작성된 이야기가 없습니다.",
+    "popup.untitled": "제목 없는 장소",
+    "popup.submittedBy": "작성자:",
+    "popup.submittedPhoto": "제출된 사진",
+    "popup.editLog": "이 기록 수정",
+    "popup.deleteLog": "이 기록 삭제",
+    "popup.markerColor": "마커 색상",
+    "popup.showText": "내 텍스트를 다른 사용자에게 보여주기",
+    "popup.story": "이야기",
+    "popup.saveChanges": "변경사항 저장",
+    "popup.deletePassword": "삭제 비밀번호",
+    "popup.deletePasswordHelp": "이 기록을 제출할 때 설정한 6자리 비밀번호를 입력해 주세요.",
+    "popup.deletePermanently": "영구 삭제",
+    "popup.youAnonymous": "나 (공개 지도에서는 익명)",
+    "form.draftPlaced": "임시 마커를 놓았습니다. 오른쪽 양식을 작성해 주세요.",
+    "form.selectionCleared": "선택이 해제되었습니다.",
+    "form.title": "이 장소 기록하기",
+    "form.selectedLocation": "선택한 위치: {lat}, {lng}",
+    "form.step1": "장소",
+    "form.step2": "기록",
+    "form.step3": "내용",
+    "form.step4": "공유",
+    "form.step5": "제출",
+    "form.stepLabel1": "1단계 / 5단계",
+    "form.stepLabel2": "2단계 / 5단계",
+    "form.stepLabel3": "3단계 / 5단계",
+    "form.stepLabel4": "4단계 / 5단계",
+    "form.stepLabel5": "5단계 / 5단계",
+    "form.submissionProgress": "제출 진행 단계",
+    "form.placeTitle": "장소 이름 정하기",
+    "form.placeHelp": "표시한 장소를 다른 사람이 이해할 수 있도록 짧은 제목을 적어 주세요.",
+    "form.submittingAs": "{name} ({email}) 계정으로 제출합니다. 로그인 이름과 이메일은 연구용 데이터베이스에 저장됩니다.",
+    "form.noEmail": "이메일 없음",
+    "form.anonymousPublic": "공개 지도에서는 익명으로 표시",
+    "form.titleField": "제목",
+    "form.shortTitle": "이 장소의 짧은 제목",
+    "form.chooseLog": "무엇을 기록할까요?",
+    "form.chooseLogHelp": "기록 유형을 하나 골라 저장한 뒤 다시 이 화면으로 돌아오세요. 저장된 항목은 초록색으로 표시됩니다. 여러 유형을 함께 추가할 수 있습니다.",
+    "form.chooseLogAria": "기록 유형 선택",
+    "form.text": "텍스트",
+    "form.photo": "사진",
+    "form.audio": "오디오",
+    "form.notSaved": "저장 안 됨",
+    "form.saved": "저장됨",
+    "form.choiceNone": "계속하려면 텍스트, 사진, 오디오 중 하나 이상을 저장해 주세요.",
+    "form.choiceSaved": "{count}개가 저장되었습니다. 다른 기록을 더 추가하거나 공유 단계로 넘어갈 수 있습니다.",
+    "form.contentTitle": "내용 추가 및 저장",
+    "form.contentTitleForType": "{label} 추가 및 저장",
+    "form.contentHelp": "이 기록 유형을 저장한 뒤 기록 선택 화면으로 돌아가 주세요.",
+    "form.textLog": "텍스트 기록",
+    "form.photoLog": "사진 기록",
+    "form.audioLog": "오디오 기록",
+    "form.contentSavedHelp": "{label}이 저장되었습니다. 완료를 눌러 기록 선택으로 돌아가세요.",
+    "form.contentUnsavedHelp": "기록 선택으로 돌아가기 전에 이 {label}을 저장해 주세요.",
+    "form.textPlaceholder": "이 장소나 경험에 대해 적어 주세요",
+    "form.saveText": "텍스트 저장",
+    "form.noText": "저장된 텍스트가 없습니다.",
+    "form.gallery": "갤러리에서 선택",
+    "form.camera": "카메라로 촬영",
+    "form.savePhoto": "사진 저장",
+    "form.noPhoto": "선택한 사진이 없습니다.",
+    "form.uploadAudio": "오디오 파일 업로드",
+    "form.recordAudio": "오디오 녹음",
+    "form.startRecording": "녹음 시작",
+    "form.stopRecording": "녹음 중지",
+    "form.saveAudio": "오디오 저장",
+    "form.noAudio": "선택하거나 녹음한 오디오가 없습니다.",
+    "form.sharingTitle": "공유 설정",
+    "form.sharingHelp": "공개 지도에 무엇을 보여줄지 선택해 주세요. 비공개 항목은 연구 관리 목적으로 저장되지만 공개되지는 않습니다.",
+    "form.sharePublic": "이 기록을 공개적으로 공유",
+    "form.showText": "내 텍스트를 다른 사용자에게 보여주기",
+    "form.showPhoto": "내 사진을 다른 사용자에게 보여주기",
+    "form.showAudio": "내 오디오를 다른 사용자에게 보여주기",
+    "form.privateHelp": "기록, 위치, 텍스트, 사진, 오디오를 공개하지 않으면 관리자만 해당 저장 데이터를 볼 수 있습니다.",
+    "form.submitTitle": "제출",
+    "form.editPassword": "수정/삭제 비밀번호",
+    "form.required": "필수",
+    "form.optional": "선택",
+    "form.passwordHelp": "나중에 이 기록을 수정하거나 삭제하려면 사용할 6자리 숫자 비밀번호를 입력해 주세요.",
+    "form.passwordPlaceholder": "숫자 6자리",
+    "form.submitButton": "저장한 기록 제출",
+    "form.back": "뒤로",
+    "form.next": "다음",
+    "form.nextLog": "다음: 기록 유형",
+    "form.nextSharing": "다음: 공유 설정",
+    "form.nextSubmit": "다음: 제출",
+    "form.doneChoices": "완료: 기록 선택으로 돌아가기",
+    "form.done": "완료",
+    "form.saveFirst": "먼저 저장",
+    "status.addTextBeforeSave": "저장하기 전에 텍스트를 입력해 주세요.",
+    "status.textSaved": "텍스트가 저장되었습니다.",
+    "status.choosePhoto": "저장하기 전에 사진을 선택하거나 촬영해 주세요.",
+    "status.photoPreparing": "{size} 사진을 리사이즈하고 압축하는 중입니다...",
+    "status.photoSaved": "사진이 저장되었습니다: {size} JPEG, 긴 변 {edge}px.",
+    "status.photoSelected": "선택한 사진: {name}. 포함하려면 사진 저장을 눌러 주세요.",
+    "status.photoNone": "선택한 사진이 없습니다.",
+    "status.audioSelected": "선택한 오디오: {name}. 포함하려면 오디오 저장을 눌러 주세요.",
+    "status.audioNone": "선택하거나 녹음한 오디오가 없습니다.",
+    "status.audioSaved": "오디오가 저장되었습니다: {name}",
+    "status.audioRecorded": "녹음한 오디오가 준비되었습니다: {name}. 포함하려면 오디오 저장을 눌러 주세요.",
+    "status.recording": "오디오를 녹음하는 중입니다...",
+    "status.textChanged": "초안이 변경되었습니다. 포함하려면 텍스트 저장을 눌러 주세요.",
+    "status.chooseAudio": "저장하기 전에 오디오를 업로드하거나 녹음해 주세요.",
+    "status.preparing": "제출을 준비하는 중입니다...",
+    "status.uploadPhoto": "사진을 업로드하는 중입니다...",
+    "status.uploadAudio": "오디오를 업로드하는 중입니다...",
+    "status.submitting": "저장한 기록을 제출하는 중입니다...",
+    "status.receivedReloading": "제출되었습니다. 지도를 다시 불러오는 중입니다...",
+    "status.mediaUploadFailed": "미디어 업로드에 실패해 제출을 중단했습니다: {message}",
+    "status.submissionFailed": "제출 실패: {message}",
+    "status.loadPublicFailed": "공개 기록을 불러오지 못했습니다: {message}",
+    "status.loadMineFailed": "내 기록을 불러오지 못했습니다: {message}",
+    "status.deleteFailed": "삭제 실패: {message}",
+    "status.deleteWorking": "삭제하고 지도를 업데이트하는 중입니다...",
+    "status.deleteComplete": "삭제가 완료되었습니다",
+    "status.editFailed": "수정 실패: {message}",
+    "status.editWorking": "수정하고 지도를 업데이트하는 중입니다...",
+    "status.editComplete": "수정이 완료되었습니다",
+    "validation.titleRequired": "제목은 필수입니다.",
+    "validation.titleBeforeNext": "계속하려면 짧은 제목을 입력해 주세요.",
+    "validation.passwordSix": "수정/삭제 비밀번호는 정확히 6자리 숫자여야 합니다.",
+    "validation.deletePassword": "6자리 삭제 비밀번호를 입력해 주세요.",
+    "validation.editPassword": "6자리 수정 비밀번호를 입력해 주세요.",
+    "validation.chooseOne": "제출하기 전에 기록 유형을 하나 이상 선택해 주세요.",
+    "validation.saveLogFirst": "먼저 기록을 저장해 주세요.",
+    "validation.saveCurrentType": "기록 선택으로 돌아가기 전에 이 기록 유형을 저장해 주세요.",
+    "validation.saveText": "제출하기 전에 텍스트를 저장해 주세요.",
+    "validation.savePhoto": "제출하기 전에 사진을 저장해 주세요.",
+    "validation.saveAudio": "제출하기 전에 오디오를 저장해 주세요.",
+    "validation.saveOne": "제출하기 전에 기록 내용 하나 이상을 저장해 주세요.",
+    "validation.turnstileAlert": "제출하기 전에 확인 절차를 완료해 주세요.",
+    "validation.turnstile": "제출하기 전에 확인 절차를 완료해 주세요.",
+    "validation.interviewDeclined": "지도는 계속 볼 수 있지만, 추가 인터뷰 연락 안내에 동의하지 않아 이번 제출은 저장되지 않았습니다.",
+    "validation.photoTooLarge": "압축 전 사진 파일은 {size}보다 작아야 합니다.",
+    "validation.notImage": "저장하기 전에 이미지 파일을 선택해 주세요.",
+    "validation.photoReadFailed": "브라우저에서 이 사진 형식을 읽을 수 없습니다. JPEG 또는 PNG 사진을 사용하거나 이미지를 내보낸 뒤 업로드해 주세요.",
+    "validation.photoDimensions": "사진 크기를 읽지 못했습니다.",
+    "validation.photoPrepare": "업로드할 사진을 준비하지 못했습니다.",
+    "validation.photoCompress": "사진을 압축하지 못했습니다.",
+    "validation.compressedTooLarge": "압축된 사진은 {size} 이하여야 합니다.",
+    "validation.fileSize": "{type} 파일은 {size} 이하여야 합니다.",
+    "validation.fileTooLarge": "파일 용량이 제한을 초과했습니다.",
+    "validation.uploadFailed": "{type} 업로드에 실패했습니다: {message}",
+    "validation.audioUnsupported": "이 브라우저에서는 웹 녹음을 지원하지 않습니다. 오디오 파일을 업로드해 주세요.",
+    "validation.audioStartFailed": "오디오 녹음을 시작하지 못했습니다. 마이크 권한을 확인하거나 오디오 파일을 업로드해 주세요.",
+    "validation.signAgain": "제출하기 전에 다시 로그인해 주세요.",
+    "validation.submitTimeout": "제출 요청이 30초를 넘겨 중단되었습니다. submit-ppgis-log Edge Function 로그를 확인해 주세요.",
+    "confirm.delete": "이 기록을 영구 삭제할까요?",
+    "alert.publicReceived": "제출되었습니다. 지금 내 지도에서 볼 수 있으며, 승인 후 공개 지도에도 표시됩니다.",
+    "alert.secretReceived": "제출되었습니다. 비공개 기록으로 저장되었고 지금 내 지도에서 볼 수 있습니다.",
+    "error.unknownFunction": "알 수 없는 Edge Function 오류입니다.",
+    "error.submitFunction": "제출 함수에 연결하지 못했습니다.",
+    "error.deleteFunction": "삭제 함수에 연결하지 못했습니다.",
+    "error.editFunction": "수정 함수에 연결하지 못했습니다."
+  }
+};
+
+let currentLanguage = localStorage.getItem(LANGUAGE_KEY) === "ko" ? "ko" : "en";
+
+function t(key, vars = {}) {
+  const template = I18N[currentLanguage]?.[key] ?? I18N.en[key] ?? key;
+  return template.replace(/\{(\w+)\}/g, (_match, name) => vars[name] ?? "");
+}
+
+function applyLanguageTo(root = document) {
+  root.querySelectorAll("[data-i18n]").forEach((element) => {
+    element.textContent = t(element.dataset.i18n);
+  });
+
+  root.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
+    element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
+  });
+
+  root.querySelectorAll("[data-i18n-title]").forEach((element) => {
+    element.setAttribute("title", t(element.dataset.i18nTitle));
+  });
+
+  root.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+    element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder));
+  });
+}
+
+function applyLanguage() {
+  document.documentElement.lang = currentLanguage === "ko" ? "ko" : "en";
+  document.body.classList.toggle("lang-ko", currentLanguage === "ko");
+  document.querySelectorAll("[data-lang-option]").forEach((button) => {
+    const active = button.dataset.langOption === currentLanguage;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  applyLanguageTo(document);
+  setAuthStatus();
+  syncMapViewControls();
+  refreshBaseLayerControl();
+}
+
+function handleLanguageToggle(event) {
+  const button = event.target.closest("[data-lang-option]");
+  if (!button) return;
+
+  const nextLanguage = button.dataset.langOption === "ko" ? "ko" : "en";
+  if (nextLanguage === currentLanguage) return;
+
+  currentLanguage = nextLanguage;
+  localStorage.setItem(LANGUAGE_KEY, currentLanguage);
+  applyLanguage();
+}
+
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 const statusEl = document.getElementById("ppgisStatus");
@@ -33,6 +509,7 @@ const welcomeModal = document.getElementById("ppgisWelcomeModal");
 const welcomeCloseButton = document.getElementById("ppgisWelcomeClose");
 const welcomeOkButton = document.getElementById("ppgisWelcomeOk");
 const welcomeDontShowButton = document.getElementById("ppgisWelcomeDontShow");
+const languageToggle = document.getElementById("languageToggle");
 
 locateButton.addEventListener("click", locateUser);
 navAuth.addEventListener("click", handleAuthNavClick);
@@ -41,6 +518,7 @@ document.addEventListener("click", closeAccountMenuOnOutsideClick);
 welcomeCloseButton.addEventListener("click", closeWelcomeModal);
 welcomeOkButton.addEventListener("click", closeWelcomeModal);
 welcomeDontShowButton.addEventListener("click", dismissWelcomeFor24Hours);
+languageToggle.addEventListener("click", handleLanguageToggle);
 
 const map = L.map("ppgisPopupMap", {
   center: [47.61, -122.33],
@@ -49,26 +527,43 @@ const map = L.map("ppgisPopupMap", {
 });
 let mapSizeRefreshTimers = [];
 
-const baseLayers = {
-  "OpenStreetMap": L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+const baseLayerTiles = {
+  openStreetMap: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: "&copy; OpenStreetMap contributors"
   }),
-  "CARTO Light": L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+  cartoLight: L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
     maxZoom: 20,
     attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
   }),
-  "Satellite Imagery": L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+  satellite: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 19,
     attribution: "Tiles &copy; Esri"
   })
 };
+let baseLayerControl = null;
 
-baseLayers["OpenStreetMap"].addTo(map);
-L.control.layers(baseLayers, null, {
-  position: "topright",
-  collapsed: true
-}).addTo(map);
+function translatedBaseLayers() {
+  return {
+    [t("basemap.openStreetMap")]: baseLayerTiles.openStreetMap,
+    [t("basemap.cartoLight")]: baseLayerTiles.cartoLight,
+    [t("basemap.satellite")]: baseLayerTiles.satellite
+  };
+}
+
+function refreshBaseLayerControl() {
+  if (baseLayerControl) {
+    map.removeControl(baseLayerControl);
+  }
+
+  baseLayerControl = L.control.layers(translatedBaseLayers(), null, {
+    position: "topright",
+    collapsed: true
+  }).addTo(map);
+}
+
+baseLayerTiles.openStreetMap.addTo(map);
+refreshBaseLayerControl();
 
 const approvedLayer = L.featureGroup().addTo(map);
 let draftMarker = null;
@@ -136,7 +631,7 @@ function userDisplayName(user = currentUser, profile = currentProfile) {
     || user?.user_metadata?.full_name
     || user?.user_metadata?.name
     || user?.email?.split("@")[0]
-    || "Participant";
+    || t("common.participant");
 }
 
 function userInitial(user = currentUser) {
@@ -204,20 +699,20 @@ function mapViewMenuHtml() {
   const childDisabled = !mapViewState.myLogs;
 
   return `
-    <div class="nav-profile-menu nav-map-view-menu" role="menu" aria-label="Account and map visibility">
-      <div class="nav-map-view" aria-label="Show on map">
-        <p class="nav-map-view-title">Show on Map</p>
-        ${mapViewToggleHtml("public", "Public Logs", mapViewState.publicLogs)}
-        ${mapViewToggleHtml("my", "My Logs", mapViewState.myLogs)}
+    <div class="nav-profile-menu nav-map-view-menu" role="menu" aria-label="${escapeHtml(t("view.menuAria"))}">
+      <div class="nav-map-view" aria-label="${escapeHtml(t("view.showOnMap"))}">
+        <p class="nav-map-view-title">${escapeHtml(t("view.showOnMap"))}</p>
+        ${mapViewToggleHtml("public", t("view.public"), mapViewState.publicLogs)}
+        ${mapViewToggleHtml("my", t("view.mine"), mapViewState.myLogs)}
         <div class="nav-map-toggle-children ${childDisabled ? "is-disabled" : ""}">
-          ${mapViewToggleHtml("shared", "Shared", mapViewState.myShared, { disabled: childDisabled })}
-          ${mapViewToggleHtml("secret", "Secret", mapViewState.mySecret, {
+          ${mapViewToggleHtml("shared", t("view.shared"), mapViewState.myShared, { disabled: childDisabled })}
+          ${mapViewToggleHtml("secret", t("view.secret"), mapViewState.mySecret, {
             disabled: childDisabled,
-            helper: "Not shown on the public map."
+            helper: t("view.secretHelp")
           })}
         </div>
       </div>
-      <button class="nav-profile-logout" type="button" data-auth-action="log-out" role="menuitem">Log out</button>
+      <button class="nav-profile-logout" type="button" data-auth-action="log-out" role="menuitem">${escapeHtml(t("auth.logout"))}</button>
     </div>
   `;
 }
@@ -288,7 +783,7 @@ function setAuthStatus() {
 
     navAuth.innerHTML = `
       <div class="nav-profile">
-        <button class="nav-profile-button" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+        <button class="nav-profile-button" type="button" aria-haspopup="true" aria-expanded="false" aria-label="${escapeHtml(t("auth.account"))}">
           <span class="nav-avatar">${avatar}</span>
           <span class="nav-profile-name">${name}</span>
         </button>
@@ -296,7 +791,13 @@ function setAuthStatus() {
       </div>
     `;
   } else {
-    navAuth.innerHTML = '<button class="nav-auth-button" type="button" data-auth-action="sign-in">Sign in / Sign up</button>';
+    navAuth.innerHTML = `
+      <button class="nav-auth-button" type="button" data-auth-action="sign-in" aria-label="${escapeHtml(t("auth.signAria"))}">
+        <span class="nav-auth-full">${escapeHtml(t("auth.signFull"))}</span>
+        <span class="nav-auth-short">${escapeHtml(t("auth.signShort"))}</span>
+        <span class="nav-auth-icon" aria-hidden="true">S</span>
+      </button>
+    `;
   }
 }
 
@@ -367,29 +868,35 @@ async function refreshAuthState() {
 }
 
 async function handleAuthNavClick(event) {
-  const profileButton = event.target.closest(".nav-profile-button");
-  if (profileButton) {
-    event.preventDefault();
-    toggleAccountMenu(profileButton);
-    return;
-  }
-
   const action = event.target.closest("[data-auth-action]")?.dataset.authAction;
   if (action === "sign-in") {
+    event.preventDefault();
+    event.stopPropagation();
     await startGoogleLogin();
     return;
   }
 
-  if (action !== "log-out") return;
+  if (action === "log-out") {
+    event.preventDefault();
+    event.stopPropagation();
+    closeAccountMenu();
 
-  if (currentUser) {
-    await supabaseClient.auth.signOut();
-    localStorage.removeItem(PROFILE_CONSENT_KEY);
-    applyCurrentUser(null, { resetView: true });
-    await loadApprovedSubmissions();
-    setStatus("Signed out. Public submissions remain view-only.");
-    closePopover();
-    clearDraftMarker();
+    if (currentUser) {
+      await supabaseClient.auth.signOut();
+      localStorage.removeItem(PROFILE_CONSENT_KEY);
+      applyCurrentUser(null, { resetView: true });
+      await loadApprovedSubmissions();
+      setStatus(t("auth.signedOut"));
+      closePopover();
+      clearDraftMarker();
+    }
+    return;
+  }
+
+  const profileButton = event.target.closest(".nav-profile-button");
+  if (profileButton) {
+    event.preventDefault();
+    toggleAccountMenu(profileButton);
     return;
   }
 }
@@ -438,22 +945,16 @@ function showResearchConsentDialog() {
     overlay.setAttribute("role", "presentation");
     overlay.innerHTML = `
       <section class="ppgis-consent-dialog" role="dialog" aria-modal="true" aria-labelledby="ppgisResearchConsentTitle">
-        <button class="ppgis-consent-close" type="button" aria-label="Close consent window">&times;</button>
-        <h3 id="ppgisResearchConsentTitle">Consent to Submit Your Data</h3>
+        <button class="ppgis-consent-close" type="button" aria-label="${escapeHtml(t("common.close"))}">&times;</button>
+        <h3 id="ppgisResearchConsentTitle">${escapeHtml(t("consent.researchTitle"))}</h3>
         <div class="ppgis-consent-copy">
-          <p>
-            This form collects your name, email, photo, story, voice/audio, text, and volunteered geographic information for this PPGIS research project.
-          </p>
-          <p>
-            You may choose whether your post is visible to other visitors. Even if it is hidden from public display, the submitted data will be stored in the master database owned and administered by Sechang Kim. Contact: vs5345@uw.edu.
-          </p>
-          <p>
-            Data is protected by Supabase security settings and will not be used for commercial or unrelated purposes. Your consent is voluntary, specific to this project, informed by these terms, and shown by selecting the agreement button below.
-          </p>
+          <p>${escapeHtml(t("consent.researchCopy1"))}</p>
+          <p>${escapeHtml(t("consent.researchCopy2"))}</p>
+          <p>${escapeHtml(t("consent.researchCopy3"))}</p>
         </div>
         <div class="ppgis-consent-actions">
-          <button class="ppgis-consent-agree" type="button">I have read and agree</button>
-          <button class="ppgis-consent-decline" type="button">I read but do not agree</button>
+          <button class="ppgis-consent-agree" type="button">${escapeHtml(t("common.agree"))}</button>
+          <button class="ppgis-consent-decline" type="button">${escapeHtml(t("common.decline"))}</button>
         </div>
       </section>
     `;
@@ -476,7 +977,7 @@ function showResearchConsentDialog() {
 async function startGoogleLogin() {
   const agreed = await showResearchConsentDialog();
   if (!agreed) {
-    setStatus("Agreement is required before adding logs. Public submissions remain view-only.", "error");
+    setStatus(t("auth.agreementRequired"), "error");
     return;
   }
 
@@ -495,15 +996,15 @@ async function startGoogleLogin() {
 
 function locateUser() {
   if (!navigator.geolocation) {
-    setLocationStatus("This browser does not support location services.", "error");
+    setLocationStatus(t("location.unsupported"), "error");
     return;
   }
 
-  const confirmed = window.confirm("Allow this site to use your current location?");
+  const confirmed = window.confirm(t("location.confirm"));
   if (!confirmed) return;
 
   locateButton.disabled = true;
-  setLocationStatus("Requesting your location...");
+  setLocationStatus(t("location.requesting"));
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
@@ -537,15 +1038,15 @@ function locateUser() {
         userLocationAccuracy.setRadius(accuracy);
       }
 
-      userLocationMarker.bindPopup("Your current location").openPopup();
+      userLocationMarker.bindPopup(escapeHtml(t("location.popup"))).openPopup();
       map.setView(latLng, Math.max(map.getZoom(), 15));
-      setLocationStatus("Location found and shown on the map.", "success");
+      setLocationStatus(t("location.found"), "success");
       locateButton.disabled = false;
     },
     (error) => {
       const message = error.code === error.PERMISSION_DENIED
-        ? "Location permission was denied."
-        : "Could not find your current location.";
+        ? t("location.denied")
+        : t("location.failed");
       setLocationStatus(message, "error");
       locateButton.disabled = false;
     },
@@ -578,7 +1079,7 @@ function markerColorButton(color, selectedColor = DEFAULT_MARKER_COLOR) {
 
 function markerColorPalette(selectedColor = DEFAULT_MARKER_COLOR) {
   return `
-    <div class="ppgis-color-grid" role="radiogroup" aria-label="Marker color">
+    <div class="ppgis-color-grid" role="radiogroup" aria-label="${escapeHtml(t("popup.markerColor"))}">
       ${MARKER_COLOR_OPTIONS.map((color) => markerColorButton(color, selectedColor)).join("")}
     </div>
   `;
@@ -592,6 +1093,7 @@ function validMarkerColor(value) {
 function openPopover(html) {
   popover.innerHTML = html;
   popover.classList.add("is-open");
+  applyLanguageTo(popover);
   refreshMapSizeSoon();
 }
 
@@ -644,59 +1146,60 @@ function resetSavedLogState() {
 
 function publicPanel(row) {
   const photoHtml = row.photo_url
-    ? `<img class="ppgis-popup-media" src="${row.photo_url}" alt="Submitted photo">`
+    ? `<img class="ppgis-popup-media" src="${row.photo_url}" alt="${escapeHtml(t("popup.submittedPhoto"))}">`
     : "";
   const audioHtml = row.audio_url
     ? `<audio class="ppgis-popup-audio" controls src="${row.audio_url}"></audio>`
     : "";
   const visibilityBadgeHtml = row.is_secret
-    ? `<span class="ppgis-visibility-badge secret">Secret</span>`
+    ? `<span class="ppgis-visibility-badge secret">${escapeHtml(t("popup.secretBadge"))}</span>`
     : row.is_owner
-      ? `<span class="ppgis-visibility-badge shared">Shared</span>`
+      ? `<span class="ppgis-visibility-badge shared">${escapeHtml(t("popup.sharedBadge"))}</span>`
       : "";
   const secretNoteHtml = row.is_secret
-    ? `<p class="ppgis-secret-note">Not shown on the public map.</p>`
+    ? `<p class="ppgis-secret-note">${escapeHtml(t("popup.notPublic"))}</p>`
     : "";
   const storyText = row.show_text === false && !row.is_owner
-    ? "This participant chose not to show the text publicly."
-    : row.body_text || "No story provided.";
+    ? t("popup.hiddenText")
+    : row.body_text || t("popup.noStory");
   const logToolsHtml = currentUser && row.is_owner
     ? `
       <div class="ppgis-delete-log">
         <div class="ppgis-log-actions">
-          <button class="ppgis-edit-toggle" type="button" data-submission-id="${escapeHtml(row.id)}">Edit this log</button>
-          <button class="ppgis-delete-toggle" type="button" data-submission-id="${escapeHtml(row.id)}">Delete this log</button>
+          <button class="ppgis-edit-toggle" type="button" data-submission-id="${escapeHtml(row.id)}">${escapeHtml(t("popup.editLog"))}</button>
+          <button class="ppgis-delete-toggle" type="button" data-submission-id="${escapeHtml(row.id)}">${escapeHtml(t("popup.deleteLog"))}</button>
         </div>
         <form class="ppgis-edit-form" data-submission-id="${escapeHtml(row.id)}" hidden>
           <label>
-            <span class="field-label-line">Edit password <span class="field-required">required</span></span>
-            <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required placeholder="6 digits">
+            <span class="field-label-line">${escapeHtml(t("form.editPassword"))} <span class="field-required">${escapeHtml(t("form.required"))}</span></span>
+            <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required placeholder="${escapeHtml(t("form.passwordPlaceholder"))}">
           </label>
           <label>
-            <span class="field-label-line">Title <span class="field-required">required</span></span>
+            <span class="field-label-line">${escapeHtml(t("form.titleField"))} <span class="field-required">${escapeHtml(t("form.required"))}</span></span>
             <input name="title" type="text" maxlength="120" required value="${escapeHtml(row.title || "")}">
           </label>
           <label>
-            Marker color
+            ${escapeHtml(t("popup.markerColor"))}
             ${markerColorPalette(row.marker_color || DEFAULT_MARKER_COLOR)}
           </label>
           <label class="checkbox-label">
             <input type="checkbox" name="show_text" ${row.show_text === false ? "" : "checked"}>
-            Show my text to other users
+            ${escapeHtml(t("popup.showText"))}
           </label>
           <label>
-            Story
+            ${escapeHtml(t("popup.story"))}
             <textarea name="body_text" rows="4">${escapeHtml(row.body_text || "")}</textarea>
           </label>
-          <button type="submit">Save Changes</button>
+          <button type="submit">${escapeHtml(t("popup.saveChanges"))}</button>
           <p class="ppgis-edit-message"></p>
         </form>
         <form class="ppgis-delete-form" data-submission-id="${escapeHtml(row.id)}" hidden>
           <label>
-            <span class="field-label-line">Delete password <span class="field-required">required</span></span>
-            <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required placeholder="6 digits">
+            <span class="field-label-line">${escapeHtml(t("popup.deletePassword"))} <span class="field-required">${escapeHtml(t("form.required"))}</span></span>
+            <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required placeholder="${escapeHtml(t("form.passwordPlaceholder"))}">
+            <span class="field-help">${escapeHtml(t("popup.deletePasswordHelp"))}</span>
           </label>
-          <button type="submit">Delete Log</button>
+          <button type="submit">${escapeHtml(t("popup.deletePermanently"))}</button>
           <p class="ppgis-delete-message"></p>
         </form>
       </div>
@@ -705,13 +1208,13 @@ function publicPanel(row) {
 
   openPopover(`
     <article class="ppgis-public-popup">
-      <button class="ppgis-popover-close" type="button" aria-label="Close">&times;</button>
+      <button class="ppgis-popover-close" type="button" aria-label="${escapeHtml(t("common.close"))}">&times;</button>
       <div class="ppgis-popup-heading">
-        <h3>${escapeHtml(row.title || "Untitled place")}</h3>
+        <h3>${escapeHtml(row.title || t("popup.untitled"))}</h3>
         ${visibilityBadgeHtml}
       </div>
       <p>${escapeHtml(storyText)}</p>
-      <p><strong>Submitted by:</strong> ${escapeHtml(row.display_name || "Anonymous")}</p>
+      <p><strong>${escapeHtml(t("popup.submittedBy"))}</strong> ${escapeHtml(row.display_name || t("common.anonymous"))}</p>
       ${secretNoteHtml}
       ${photoHtml}
       ${audioHtml}
@@ -756,7 +1259,7 @@ function resetTurnstileWidget() {
 }
 
 async function edgeFunctionErrorMessage(error) {
-  if (!error) return "Unknown Edge Function error.";
+  if (!error) return t("error.unknownFunction");
 
   try {
     const errorBody = await error.context?.json?.();
@@ -769,7 +1272,7 @@ async function edgeFunctionErrorMessage(error) {
     // Fall back to the Supabase client error message below.
   }
 
-  return error.message || "Unknown Edge Function error.";
+  return error.message || t("error.unknownFunction");
 }
 
 function isValidDeletePassword(value) {
@@ -786,16 +1289,14 @@ function showInterviewConsentDialog() {
     overlay.setAttribute("role", "presentation");
     overlay.innerHTML = `
       <section class="ppgis-consent-dialog" role="dialog" aria-modal="true" aria-labelledby="ppgisConsentTitle">
-        <button class="ppgis-consent-close" type="button" aria-label="Close consent window">&times;</button>
-        <h3 id="ppgisConsentTitle">Additional Interview Contact</h3>
+        <button class="ppgis-consent-close" type="button" aria-label="${escapeHtml(t("common.close"))}">&times;</button>
+        <h3 id="ppgisConsentTitle">${escapeHtml(t("consent.interviewTitle"))}</h3>
         <div class="ppgis-consent-copy">
-          <p>
-            A researcher may contact you by email in the future to request an additional interview. You may decline if you do not wish to participate, and not responding will be treated as declining. Even if you accept an interview request, you may cancel or stop the interview at any time.
-          </p>
+          <p>${escapeHtml(t("consent.interviewCopy"))}</p>
         </div>
         <div class="ppgis-consent-actions">
-          <button class="ppgis-consent-agree" type="button">I have read and agree</button>
-          <button class="ppgis-consent-decline" type="button">I read but do not agree</button>
+          <button class="ppgis-consent-agree" type="button">${escapeHtml(t("common.agree"))}</button>
+          <button class="ppgis-consent-decline" type="button">${escapeHtml(t("common.decline"))}</button>
         </div>
       </section>
     `;
@@ -819,171 +1320,171 @@ function showInterviewConsentDialog() {
 
 function openSubmissionForm(lat, lng) {
   if (!currentUser) {
-    setStatus("Sign in to add a log. Public submissions remain view-only.");
+    setStatus(t("auth.signInRequiredCopy"));
     openPopover(`
       <article class="ppgis-public-popup">
-        <button class="ppgis-popover-close" type="button" aria-label="Close">&times;</button>
-        <h3>Sign In Required</h3>
-        <p>Public submissions are open for viewing. To add your own log, sign in with Google after reviewing the research agreement.</p>
-        <button class="ppgis-auth-link" type="button">Sign In</button>
+        <button class="ppgis-popover-close" type="button" aria-label="${escapeHtml(t("common.close"))}">&times;</button>
+        <h3>${escapeHtml(t("auth.signInRequired"))}</h3>
+        <p>${escapeHtml(t("auth.signInRequiredCopy"))}</p>
+        <button class="ppgis-auth-link" type="button">${escapeHtml(t("auth.signIn"))}</button>
       </article>
     `);
     return;
   }
 
   resetSavedLogState();
-  setStatus("Draft marker placed. Complete the form on the right.");
+  setStatus(t("form.draftPlaced"));
   openPopover(`
     <form class="ppgis-popup-form" data-lat="${lat}" data-lng="${lng}">
-      <button class="ppgis-popover-close" type="button" aria-label="Close">&times;</button>
-      <h3>Submit This Place</h3>
-      <p class="popup-form-message">Selected location: ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
-      <div class="ppgis-step-progress" aria-label="Submission progress">
-        <span data-progress-step="1">Place</span>
-        <span data-progress-step="2">Log</span>
-        <span data-progress-step="3">Content</span>
-        <span data-progress-step="4">Sharing</span>
-        <span data-progress-step="5">Submit</span>
+      <button class="ppgis-popover-close" type="button" aria-label="${escapeHtml(t("common.close"))}">&times;</button>
+      <h3>${escapeHtml(t("form.title"))}</h3>
+      <p class="popup-form-message">${escapeHtml(t("form.selectedLocation", { lat: lat.toFixed(6), lng: lng.toFixed(6) }))}</p>
+      <div class="ppgis-step-progress" aria-label="${escapeHtml(t("form.submissionProgress"))}">
+        <span data-progress-step="1">${escapeHtml(t("form.step1"))}</span>
+        <span data-progress-step="2">${escapeHtml(t("form.step2"))}</span>
+        <span data-progress-step="3">${escapeHtml(t("form.step3"))}</span>
+        <span data-progress-step="4">${escapeHtml(t("form.step4"))}</span>
+        <span data-progress-step="5">${escapeHtml(t("form.step5"))}</span>
       </div>
 
       <section class="form-step" data-form-step="1">
-        <p class="step-label">Step 1 of 5</p>
-        <h4>Title and Anonymity</h4>
-        <p class="field-help">Submitting as ${escapeHtml(userDisplayName())} (${escapeHtml(currentUser.email || "no email")}). Your login name and email are stored in the master database.</p>
+        <p class="step-label">${escapeHtml(t("form.stepLabel1"))}</p>
+        <h4>${escapeHtml(t("form.placeTitle"))}</h4>
+        <p class="field-help">${escapeHtml(t("form.submittingAs", { name: userDisplayName(), email: currentUser.email || t("form.noEmail") }))}</p>
         <label class="ppgis-popup-check">
           <input name="is_anonymous" type="checkbox" checked>
-          Anonymous on the public map
+          ${escapeHtml(t("form.anonymousPublic"))}
         </label>
         <label>
-          <span class="field-label-line">Title <span class="field-required">required</span></span>
-          <input name="title" type="text" maxlength="120" required placeholder="Short title for this place">
+          <span class="field-label-line">${escapeHtml(t("form.titleField"))} <span class="field-required">${escapeHtml(t("form.required"))}</span></span>
+          <input name="title" type="text" maxlength="120" required placeholder="${escapeHtml(t("form.shortTitle"))}">
         </label>
       </section>
 
       <section class="form-step" data-form-step="2" hidden>
-        <p class="step-label">Step 2 of 5</p>
-        <h4>Choose What to Log</h4>
-        <p class="field-help">Choose one log type, save it, then return here. Saved logs turn green. You can add more than one type.</p>
-        <div class="log-type-grid" aria-label="Choose log type">
+        <p class="step-label">${escapeHtml(t("form.stepLabel2"))}</p>
+        <h4>${escapeHtml(t("form.chooseLog"))}</h4>
+        <p class="field-help">${escapeHtml(t("form.chooseLogHelp"))}</p>
+        <div class="log-type-grid" aria-label="${escapeHtml(t("form.chooseLogAria"))}">
           <button class="log-type-card" type="button" data-log-type="text" aria-pressed="false">
             <span class="log-type-icon log-type-text-icon" aria-hidden="true">Aa</span>
-            <span>Text</span>
-            <small class="log-type-status" data-log-status="text">Not saved</small>
+            <span>${escapeHtml(t("form.text"))}</span>
+            <small class="log-type-status" data-log-status="text">${escapeHtml(t("form.notSaved"))}</small>
           </button>
           <button class="log-type-card" type="button" data-log-type="photo" aria-pressed="false">
             <span class="log-type-icon" aria-hidden="true">
               <img src="img/camera.png" alt="">
             </span>
-            <span>Photo</span>
-            <small class="log-type-status" data-log-status="photo">Not saved</small>
+            <span>${escapeHtml(t("form.photo"))}</span>
+            <small class="log-type-status" data-log-status="photo">${escapeHtml(t("form.notSaved"))}</small>
           </button>
           <button class="log-type-card" type="button" data-log-type="audio" aria-pressed="false">
             <span class="log-type-icon log-type-audio-icon" aria-hidden="true">REC</span>
-            <span>Audio</span>
-            <small class="log-type-status" data-log-status="audio">Not saved</small>
+            <span>${escapeHtml(t("form.audio"))}</span>
+            <small class="log-type-status" data-log-status="audio">${escapeHtml(t("form.notSaved"))}</small>
           </button>
         </div>
-        <p class="media-status" id="log-choice-status">Save at least one text, photo, or audio log before continuing.</p>
+        <p class="media-status" id="log-choice-status">${escapeHtml(t("form.choiceNone"))}</p>
       </section>
 
       <section class="form-step" data-form-step="3" hidden>
-        <p class="step-label">Step 3 of 5</p>
-        <h4 id="content-step-title">Add and Save Content</h4>
-        <p class="field-help" id="content-step-help">Save this log type before returning to the log choices.</p>
+        <p class="step-label">${escapeHtml(t("form.stepLabel3"))}</p>
+        <h4 id="content-step-title">${escapeHtml(t("form.contentTitle"))}</h4>
+        <p class="field-help" id="content-step-help">${escapeHtml(t("form.contentHelp"))}</p>
         <div id="text-log-panel" class="log-panel" hidden>
           <label>
-            <span class="field-label-line">Text <span class="field-optional">optional</span></span>
-            <textarea id="text-log-draft" rows="4" placeholder="Describe this place or experience"></textarea>
+            <span class="field-label-line">${escapeHtml(t("form.text"))} <span class="field-optional">${escapeHtml(t("form.optional"))}</span></span>
+            <textarea id="text-log-draft" rows="4" placeholder="${escapeHtml(t("form.textPlaceholder"))}"></textarea>
           </label>
-          <button id="save-text-log" class="save-log-button" type="button">Save Text</button>
-          <p id="text-status" class="media-status">No text saved.</p>
+          <button id="save-text-log" class="save-log-button" type="button">${escapeHtml(t("form.saveText"))}</button>
+          <p id="text-status" class="media-status">${escapeHtml(t("form.noText"))}</p>
         </div>
 
         <div id="photo-log-panel" class="log-panel" hidden>
-          <span class="field-label-line">Photo <span class="field-optional">optional</span></span>
+          <span class="field-label-line">${escapeHtml(t("form.photo"))} <span class="field-optional">${escapeHtml(t("form.optional"))}</span></span>
           <div class="media-choice-grid">
             <label class="media-action">
               <input id="photo-upload-file" name="photo_upload_file" type="file" accept="image/*">
               <span class="media-action-ui" aria-hidden="true">
                 <img class="media-action-icon" src="img/gallery.png" alt="">
-                <span>Go to Gallery</span>
+                <span>${escapeHtml(t("form.gallery"))}</span>
               </span>
             </label>
             <label class="media-action">
               <input id="photo-capture-file" name="photo_capture_file" type="file" accept="image/*" capture="environment">
               <span class="media-action-ui" aria-hidden="true">
                 <img class="media-action-icon" src="img/camera.png" alt="">
-                <span>Go to Camera</span>
+                <span>${escapeHtml(t("form.camera"))}</span>
               </span>
             </label>
           </div>
-          <button id="save-photo-log" class="save-log-button" type="button">Save Photo</button>
-          <p id="photo-status" class="media-status">No photo selected.</p>
+          <button id="save-photo-log" class="save-log-button" type="button">${escapeHtml(t("form.savePhoto"))}</button>
+          <p id="photo-status" class="media-status">${escapeHtml(t("form.noPhoto"))}</p>
         </div>
 
         <div id="audio-log-panel" class="log-panel" hidden>
-          <span class="field-label-line">Audio <span class="field-optional">optional</span></span>
+          <span class="field-label-line">${escapeHtml(t("form.audio"))} <span class="field-optional">${escapeHtml(t("form.optional"))}</span></span>
           <div class="media-choice-grid">
             <label>
-              Upload Audio File
+              ${escapeHtml(t("form.uploadAudio"))}
               <input id="audio-upload-file" name="audio_upload_file" type="file" accept="audio/*">
             </label>
             <div class="recording-controls">
-              <span>Record Audio</span>
+              <span>${escapeHtml(t("form.recordAudio"))}</span>
               <div class="recording-buttons">
-                <button id="start-recording" type="button">Start Recording</button>
-                <button id="stop-recording" type="button" disabled>Stop Recording</button>
+                <button id="start-recording" type="button">${escapeHtml(t("form.startRecording"))}</button>
+                <button id="stop-recording" type="button" disabled>${escapeHtml(t("form.stopRecording"))}</button>
               </div>
             </div>
           </div>
-          <button id="save-audio-log" class="save-log-button" type="button">Save Audio</button>
-          <p id="audio-status" class="media-status">No audio selected or recorded.</p>
+          <button id="save-audio-log" class="save-log-button" type="button">${escapeHtml(t("form.saveAudio"))}</button>
+          <p id="audio-status" class="media-status">${escapeHtml(t("form.noAudio"))}</p>
         </div>
       </section>
 
       <section class="form-step" data-form-step="4" hidden>
-        <p class="step-label">Step 4 of 5</p>
-        <h4>Sharing</h4>
-        <p class="field-help">Choose what appears on the public map. Private items are stored for project administration but are not shown publicly.</p>
+        <p class="step-label">${escapeHtml(t("form.stepLabel4"))}</p>
+        <h4>${escapeHtml(t("form.sharingTitle"))}</h4>
+        <p class="field-help">${escapeHtml(t("form.sharingHelp"))}</p>
         <label>
-          Marker color
+          ${escapeHtml(t("popup.markerColor"))}
           ${markerColorPalette(DEFAULT_MARKER_COLOR)}
         </label>
         <label class="checkbox-label">
           <input type="checkbox" id="share-public" name="share_public" checked>
-          Share this log publicly
+          ${escapeHtml(t("form.sharePublic"))}
         </label>
         <label class="checkbox-label">
           <input type="checkbox" id="show-text" name="show_text" checked>
-          Show my text to other users
+          ${escapeHtml(t("form.showText"))}
         </label>
         <label class="checkbox-label">
           <input type="checkbox" id="show-photo" name="show_photo" checked>
-          Show my photo to other users
+          ${escapeHtml(t("form.showPhoto"))}
         </label>
         <label class="checkbox-label">
           <input type="checkbox" id="show-audio" name="show_audio">
-          Show my audio to other users
+          ${escapeHtml(t("form.showAudio"))}
         </label>
-        <p class="field-help">If the log, location, text, photo, or audio is not shared publicly, only the administrator can view that saved data.</p>
+        <p class="field-help">${escapeHtml(t("form.privateHelp"))}</p>
       </section>
 
       <section class="form-step" data-form-step="5" hidden>
-        <p class="step-label">Step 5 of 5</p>
-        <h4>Submit</h4>
+        <p class="step-label">${escapeHtml(t("form.stepLabel5"))}</p>
+        <h4>${escapeHtml(t("form.submitTitle"))}</h4>
         <label>
-          <span class="field-label-line">Edit/Delete password <span class="field-required">required</span></span>
-          <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required autocomplete="new-password" placeholder="6 digits">
-          <span class="field-help">Use this 6-digit numeric password if you want to edit or delete this log later.</span>
+          <span class="field-label-line">${escapeHtml(t("form.editPassword"))} <span class="field-required">${escapeHtml(t("form.required"))}</span></span>
+          <input name="delete_password" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required autocomplete="new-password" placeholder="${escapeHtml(t("form.passwordPlaceholder"))}">
+          <span class="field-help">${escapeHtml(t("form.passwordHelp"))}</span>
         </label>
         <div class="ppgis-turnstile-wrap">
           <div id="ppgisTurnstile" class="cf-turnstile"></div>
         </div>
-        <button type="submit">Submit Saved Log</button>
+        <button type="submit">${escapeHtml(t("form.submitButton"))}</button>
       </section>
       <div class="form-step-actions">
-        <button type="button" class="step-secondary" data-step-prev>Back</button>
-        <button type="button" class="step-primary" data-step-next>Next</button>
+        <button type="button" class="step-secondary" data-step-prev>${escapeHtml(t("form.back"))}</button>
+        <button type="button" class="step-primary" data-step-next>${escapeHtml(t("form.next"))}</button>
       </div>
       <p class="popup-form-message"></p>
     </form>
@@ -1015,6 +1516,14 @@ function hasSavedLog() {
   return Boolean(savedTextLog || savedPhotoFile || savedAudioFile);
 }
 
+function logTypeLabel(type) {
+  return {
+    text: t("form.textLog"),
+    photo: t("form.photoLog"),
+    audio: t("form.audioLog")
+  }[type] || t("form.contentTitle");
+}
+
 function setFormMessage(form, message, type = "") {
   const messageEl = form?.querySelector(".popup-form-message:last-child");
   if (!messageEl) return;
@@ -1035,7 +1544,7 @@ function updateLogChoiceState() {
       button.setAttribute("aria-pressed", String(saved));
     }
     if (status) {
-      status.textContent = saved ? "Saved" : "Not saved";
+      status.textContent = saved ? t("form.saved") : t("form.notSaved");
     }
   });
 
@@ -1043,22 +1552,18 @@ function updateLogChoiceState() {
   if (choiceStatus) {
     const savedCount = ["text", "photo", "audio"].filter(savedLogState).length;
     choiceStatus.textContent = savedCount
-      ? `${savedCount} saved. You can add another log type or continue to sharing.`
-      : "Save at least one text, photo, or audio log before continuing.";
+      ? t("form.choiceSaved", { count: savedCount })
+      : t("form.choiceNone");
     choiceStatus.className = `media-status ${savedCount ? "success" : ""}`.trim();
   }
 
   if (activeContentType) {
-    const labels = {
-      text: "Text Log",
-      photo: "Photo Log",
-      audio: "Audio Log"
-    };
+    const label = logTypeLabel(activeContentType);
     const help = document.getElementById("content-step-help");
     if (help) {
       help.textContent = savedLogState(activeContentType)
-        ? `${labels[activeContentType]} is saved. Tap Done to return to log choices.`
-        : `Save this ${labels[activeContentType].toLowerCase()} before returning to log choices.`;
+        ? t("form.contentSavedHelp", { label })
+        : t("form.contentUnsavedHelp", { label });
     }
   }
 
@@ -1071,18 +1576,14 @@ function setActiveContentType(type) {
     setLogPanel(candidate, candidate === type);
   });
 
-  const labels = {
-    text: "Text Log",
-    photo: "Photo Log",
-    audio: "Audio Log"
-  };
+  const label = logTypeLabel(type);
   const title = document.getElementById("content-step-title");
   const help = document.getElementById("content-step-help");
-  if (title) title.textContent = `Add and Save ${labels[type]}`;
+  if (title) title.textContent = t("form.contentTitleForType", { label });
   if (help) {
     help.textContent = savedLogState(type)
-      ? `${labels[type]} is saved. You can update it or return to log choices.`
-      : `Save this ${labels[type].toLowerCase()} before returning to log choices.`;
+      ? t("form.contentSavedHelp", { label })
+      : t("form.contentUnsavedHelp", { label });
   }
 }
 
@@ -1099,18 +1600,18 @@ function validateStepBeforeNext(form, step) {
   if (step === 1) {
     const title = String(new FormData(form).get("title") || "").trim();
     if (!title) {
-      setFormMessage(form, "Add a short title before continuing.", "error");
+      setFormMessage(form, t("validation.titleBeforeNext"), "error");
       return false;
     }
   }
 
   if (step === 2 && !hasSavedLog()) {
-    setFormMessage(form, "Save at least one text, photo, or audio log before continuing.", "error");
+    setFormMessage(form, t("form.choiceNone"), "error");
     return false;
   }
 
   if (step === 3 && !savedLogState(activeContentType)) {
-    setFormMessage(form, "Save this log type before returning to the log choices.", "error");
+    setFormMessage(form, t("validation.saveCurrentType"), "error");
     return false;
   }
 
@@ -1150,10 +1651,10 @@ function updateStepButtons(form) {
   nextButton.hidden = step === 5;
   nextButton.disabled = (step === 2 && !hasSavedLog()) || (step === 3 && !savedLogState(activeContentType));
 
-  if (step === 1) nextButton.textContent = "Next: Choose Log";
-  if (step === 2) nextButton.textContent = hasSavedLog() ? "Next: Sharing" : "Save a Log First";
-  if (step === 3) nextButton.textContent = savedLogState(activeContentType) ? "Done" : "Save First";
-  if (step === 4) nextButton.textContent = "Next: Submit";
+  if (step === 1) nextButton.textContent = t("form.nextLog");
+  if (step === 2) nextButton.textContent = hasSavedLog() ? t("form.nextSharing") : t("validation.saveLogFirst");
+  if (step === 3) nextButton.textContent = savedLogState(activeContentType) ? t("form.done") : t("form.saveFirst");
+  if (step === 4) nextButton.textContent = t("form.nextSubmit");
 }
 
 function updateSharingControls() {
@@ -1242,6 +1743,104 @@ function fileExtension(file) {
   return extension ? `.${extension}` : "";
 }
 
+function fileBaseName(file) {
+  return (file.name || "photo").replace(/\.[^.]+$/, "") || "photo";
+}
+
+function isLikelyImageFile(file) {
+  return file.type.startsWith("image/")
+    || /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(file.name || "");
+}
+
+function formatFileSize(bytes) {
+  const megabytes = bytes / 1024 / 1024;
+  return `${megabytes.toFixed(megabytes >= 10 ? 0 : 1)} MB`;
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error(t("validation.photoReadFailed")));
+    };
+
+    image.src = objectUrl;
+  });
+}
+
+function resizedPhotoDimensions(width, height) {
+  const longestEdge = Math.max(width, height);
+  if (longestEdge <= PHOTO_MAX_EDGE_PX) {
+    return { width, height };
+  }
+
+  const scale = PHOTO_MAX_EDGE_PX / longestEdge;
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale))
+  };
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+        return;
+      }
+      reject(new Error(t("validation.photoCompress")));
+    }, type, quality);
+  });
+}
+
+async function preparePhotoForUpload(file) {
+  if (file.size >= MAX_PHOTO_BYTES) {
+    throw new Error(t("validation.photoTooLarge", { size: formatFileSize(MAX_PHOTO_BYTES) }));
+  }
+
+  if (!isLikelyImageFile(file)) {
+    throw new Error(t("validation.notImage"));
+  }
+
+  const image = await loadImageFromFile(file);
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+
+  if (!sourceWidth || !sourceHeight) {
+    throw new Error(t("validation.photoDimensions"));
+  }
+
+  const dimensions = resizedPhotoDimensions(sourceWidth, sourceHeight);
+  const canvas = document.createElement("canvas");
+  canvas.width = dimensions.width;
+  canvas.height = dimensions.height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error(t("validation.photoPrepare"));
+  }
+
+  context.drawImage(image, 0, 0, dimensions.width, dimensions.height);
+  const blob = await canvasToBlob(canvas, "image/jpeg", PHOTO_JPEG_QUALITY);
+
+  if (blob.size > MAX_COMPRESSED_PHOTO_BYTES) {
+    throw new Error(t("validation.compressedTooLarge", { size: formatFileSize(MAX_COMPRESSED_PHOTO_BYTES) }));
+  }
+
+  return new File([blob], `${fileBaseName(file)}-1600.jpg`, {
+    type: "image/jpeg",
+    lastModified: Date.now()
+  });
+}
+
 function withTimeout(promise, timeoutMs, label) {
   return Promise.race([
     promise,
@@ -1256,7 +1855,7 @@ async function invokeSubmitFunction(body) {
   const accessToken = sessionData?.session?.access_token;
 
   if (sessionError || !accessToken) {
-    throw new Error("Sign in again before submitting.");
+    throw new Error(t("validation.signAgain"));
   }
 
   const controller = new AbortController();
@@ -1299,7 +1898,7 @@ async function invokeSubmitFunction(body) {
     return { data: responseBody, error: null };
   } catch (error) {
     if (error?.name === "AbortError") {
-      throw new Error("Submission request timed out after 30 seconds. Check the submit-ppgis-log Edge Function logs.");
+      throw new Error(t("validation.submitTimeout"));
     }
     throw error;
   } finally {
@@ -1311,9 +1910,10 @@ async function uploadMediaFile(file, folder, maxBytes) {
   if (!file) return null;
 
   if (file.size > maxBytes) {
-    const limitMb = Math.round(maxBytes / 1024 / 1024);
-    alert(`${folder === "photos" ? "Photo" : "Audio"} file must be ${limitMb} MB or smaller.`);
-    throw new Error("File size exceeds limit");
+    const fileType = folder === "photos" ? t("form.photo") : t("form.audio");
+    const message = t("validation.fileSize", { type: fileType, size: formatFileSize(maxBytes) });
+    alert(message);
+    throw new Error(t("validation.fileTooLarge"));
   }
 
   const path = `${folder}/${crypto.randomUUID()}${fileExtension(file)}`;
@@ -1327,11 +1927,12 @@ async function uploadMediaFile(file, folder, maxBytes) {
         contentType: file.type || undefined
       }),
     MEDIA_UPLOAD_TIMEOUT_MS,
-    `${folder === "photos" ? "Photo" : "Audio"} upload`
+    `${folder === "photos" ? t("form.photo") : t("form.audio")} upload`
   );
 
   if (error) {
-    alert(`Could not upload ${folder === "photos" ? "photo" : "audio"}: ${error.message}`);
+    const fileType = folder === "photos" ? t("form.photo") : t("form.audio");
+    alert(t("validation.uploadFailed", { type: fileType, message: error.message }));
     throw error;
   }
 
@@ -1378,7 +1979,7 @@ function normalizeMySubmission(row) {
     is_secret: !sharePublic,
     is_owner: true,
     source: "mine",
-    display_name: row.is_anonymous ? "You (anonymous publicly)" : userDisplayName()
+    display_name: row.is_anonymous ? t("popup.youAnonymous") : userDisplayName()
   };
 }
 
@@ -1403,7 +2004,7 @@ async function loadPublicLogRows() {
     .select("id, latitude, longitude, title, body_text, display_name, photo_path, audio_path, marker_color, show_text, created_at");
 
   if (error) {
-    setStatus(`Could not load public logs: ${error.message}`, "error");
+    setStatus(t("status.loadPublicFailed", { message: error.message }), "error");
     return [];
   }
 
@@ -1430,7 +2031,7 @@ async function loadMyLogRows(options = {}) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    setStatus(`Could not load your logs: ${error.message}`, "error");
+    setStatus(t("status.loadMineFailed", { message: error.message }), "error");
     return [];
   }
 
@@ -1504,7 +2105,7 @@ map.on("click", (event) => {
   if (popover.classList.contains("is-open")) {
     if (popover.querySelector(".ppgis-popup-form")) {
       clearDraftMarker();
-      setStatus("Selection cleared.");
+      setStatus(t("form.selectionCleared"));
     }
     closePopover();
     return;
@@ -1530,13 +2131,13 @@ map.on("click", (event) => {
   openSubmissionForm(lat, lng);
 });
 
-popover.addEventListener("click", (event) => {
+popover.addEventListener("click", async (event) => {
   if (event.target.closest(".ppgis-popover-close")) {
     event.preventDefault();
     event.stopPropagation();
     if (event.target.closest(".ppgis-popup-form")) {
       clearDraftMarker();
-      setStatus("Selection cleared.");
+      setStatus(t("form.selectionCleared"));
     }
     closePopover();
     return;
@@ -1587,38 +2188,58 @@ popover.addEventListener("click", (event) => {
     const textDraft = document.getElementById("text-log-draft");
     const value = String(textDraft?.value || "").trim();
     if (!value) {
-      setMediaStatus("text-status", "Add text before saving.", "recording");
+      setMediaStatus("text-status", t("status.addTextBeforeSave"), "recording");
       return;
     }
     savedTextLog = value;
     selectedLogTypes.add("text");
-    setMediaStatus("text-status", "Text saved.", "success");
+    setMediaStatus("text-status", t("status.textSaved"), "success");
     updateLogChoiceState();
     return;
   }
 
-  if (event.target.closest("#save-photo-log")) {
+  const savePhotoButton = event.target.closest("#save-photo-log");
+  if (savePhotoButton) {
     const file = selectedFileFromInput("photo-capture-file") || selectedFileFromInput("photo-upload-file");
     if (!file) {
-      setMediaStatus("photo-status", "Choose or take a photo before saving.", "recording");
+      setMediaStatus("photo-status", t("status.choosePhoto"), "recording");
       return;
     }
-    savedPhotoFile = file;
-    selectedLogTypes.add("photo");
-    setMediaStatus("photo-status", `Photo saved: ${file.name}`, "success");
+
+    savePhotoButton.disabled = true;
+    savedPhotoFile = null;
+    selectedLogTypes.delete("photo");
     updateLogChoiceState();
+    setMediaStatus("photo-status", t("status.photoPreparing", { size: formatFileSize(file.size) }));
+
+    try {
+      const compressedPhoto = await preparePhotoForUpload(file);
+      savedPhotoFile = compressedPhoto;
+      selectedLogTypes.add("photo");
+      setMediaStatus(
+        "photo-status",
+        t("status.photoSaved", { size: formatFileSize(compressedPhoto.size), edge: PHOTO_MAX_EDGE_PX }),
+        "success"
+      );
+      updateLogChoiceState();
+    } catch (error) {
+      console.error("Photo compression failed:", error);
+      setMediaStatus("photo-status", error.message || t("validation.photoPrepare"), "recording");
+    } finally {
+      savePhotoButton.disabled = false;
+    }
     return;
   }
 
   if (event.target.closest("#save-audio-log")) {
     const file = recordedAudioFile || selectedFileFromInput("audio-upload-file");
     if (!file) {
-      setMediaStatus("audio-status", "Upload or record audio before saving.", "recording");
+      setMediaStatus("audio-status", t("status.chooseAudio"), "recording");
       return;
     }
     savedAudioFile = file;
     selectedLogTypes.add("audio");
-    setMediaStatus("audio-status", `Audio saved: ${file.name}`, "success");
+    setMediaStatus("audio-status", t("status.audioSaved", { name: file.name }), "success");
     updateLogChoiceState();
     return;
   }
@@ -1639,7 +2260,7 @@ popover.addEventListener("change", (event) => {
     savedPhotoFile = null;
     selectedLogTypes.delete("photo");
     updateLogChoiceState();
-    setMediaStatus("photo-status", file ? `Selected photo: ${file.name}. Save Photo to include it.` : "No photo selected.", file ? "" : "");
+    setMediaStatus("photo-status", file ? t("status.photoSelected", { name: file.name }) : t("status.photoNone"), file ? "" : "");
   }
 
   if (event.target.matches("#audio-upload-file")) {
@@ -1650,7 +2271,7 @@ popover.addEventListener("change", (event) => {
       selectedLogTypes.delete("audio");
       updateLogChoiceState();
     }
-    setMediaStatus("audio-status", file ? `Selected audio: ${file.name}. Save Audio to include it.` : "No audio selected or recorded.", file ? "" : "");
+    setMediaStatus("audio-status", file ? t("status.audioSelected", { name: file.name }) : t("status.audioNone"), file ? "" : "");
   }
 });
 
@@ -1659,13 +2280,13 @@ popover.addEventListener("input", (event) => {
     savedTextLog = null;
     selectedLogTypes.delete("text");
     updateLogChoiceState();
-    setMediaStatus("text-status", "Draft changed. Save Text to include it.");
+    setMediaStatus("text-status", t("status.textChanged"));
   }
 });
 
 async function startAudioRecording() {
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-    alert("In-browser audio recording is not supported by this browser. Please upload an audio file instead.");
+    alert(t("validation.audioUnsupported"));
     return;
   }
 
@@ -1688,7 +2309,7 @@ async function startAudioRecording() {
       savedAudioFile = null;
       selectedLogTypes.delete("audio");
       stopActiveAudioStream();
-      setMediaStatus("audio-status", `Recorded audio ready: ${recordedAudioFile.name}. Save Audio to include it.`, "success");
+      setMediaStatus("audio-status", t("status.audioRecorded", { name: recordedAudioFile.name }), "success");
       updateLogChoiceState();
       document.getElementById("start-recording").disabled = false;
       document.getElementById("stop-recording").disabled = true;
@@ -1697,10 +2318,10 @@ async function startAudioRecording() {
     mediaRecorder.start();
     document.getElementById("start-recording").disabled = true;
     document.getElementById("stop-recording").disabled = false;
-    setMediaStatus("audio-status", "Recording audio...", "recording");
+    setMediaStatus("audio-status", t("status.recording"), "recording");
   } catch (error) {
     console.error("Audio recording failed:", error);
-    alert("Could not start audio recording. Please check microphone permission or upload an audio file.");
+    alert(t("validation.audioStartFailed"));
     resetRecordingState();
   }
 }
@@ -1757,86 +2378,86 @@ popover.addEventListener("submit", async (submitEvent) => {
     marker_color: markerColor
   };
   if (!currentUser) {
-    message.textContent = "Sign in before submitting a log.";
+    message.textContent = t("auth.needSignInSubmit");
     message.className = "popup-form-message error";
     return;
   }
 
   if (!payload.title) {
-    message.textContent = "Title is required.";
+    message.textContent = t("validation.titleRequired");
     message.className = "popup-form-message error";
     return;
   }
 
   if (!isValidDeletePassword(deletePassword)) {
-    message.textContent = "Edit/delete password must be exactly 6 numeric digits.";
+    message.textContent = t("validation.passwordSix");
     message.className = "popup-form-message error";
     return;
   }
 
   if (!selectedLogTypes.size) {
-    message.textContent = "Choose at least one log type before submitting.";
+    message.textContent = t("validation.chooseOne");
     message.className = "popup-form-message error";
     return;
   }
 
   if (selectedLogTypes.has("text") && !activeSavedText) {
-    message.textContent = "Save your text before submitting.";
+    message.textContent = t("validation.saveText");
     message.className = "popup-form-message error";
     return;
   }
 
   if (selectedLogTypes.has("photo") && !activeSavedPhoto) {
-    message.textContent = "Save your photo before submitting.";
+    message.textContent = t("validation.savePhoto");
     message.className = "popup-form-message error";
     return;
   }
 
   if (selectedLogTypes.has("audio") && !activeSavedAudio) {
-    message.textContent = "Save your audio before submitting.";
+    message.textContent = t("validation.saveAudio");
     message.className = "popup-form-message error";
     return;
   }
 
   if (!activeSavedText && !activeSavedPhoto && !activeSavedAudio) {
-    message.textContent = "Save at least one log component before submitting.";
+    message.textContent = t("validation.saveOne");
     message.className = "popup-form-message error";
     return;
   }
 
   const turnstileToken = getTurnstileToken();
   if (!turnstileToken) {
-    alert("Please complete the verification before submitting.");
-    message.textContent = "Complete the verification before submitting.";
+    alert(t("validation.turnstileAlert"));
+    message.textContent = t("validation.turnstile");
     message.className = "popup-form-message error";
     return;
   }
 
   const consentGranted = await showInterviewConsentDialog();
   if (!consentGranted) {
-    message.textContent = "You can continue viewing the map, but this submission was not saved because the interview contact notice was declined.";
+    message.textContent = t("validation.interviewDeclined");
     message.className = "popup-form-message error";
     resetTurnstileWidget();
     return;
   }
 
-  message.textContent = "Preparing submission...";
+  message.textContent = t("status.preparing");
   message.className = "popup-form-message";
   if (submitButton) submitButton.disabled = true;
 
   try {
     if (activeSavedPhoto) {
-      message.textContent = "Uploading photo...";
+      message.textContent = t("status.uploadPhoto");
     }
-    payload.photo_path = await uploadMediaFile(activeSavedPhoto, "photos", MAX_PHOTO_BYTES);
+    payload.photo_path = await uploadMediaFile(activeSavedPhoto, "photos", MAX_COMPRESSED_PHOTO_BYTES);
 
     if (activeSavedAudio) {
-      message.textContent = "Uploading audio...";
+      message.textContent = t("status.uploadAudio");
     }
     payload.audio_path = await uploadMediaFile(activeSavedAudio, "audio", MAX_AUDIO_BYTES);
   } catch (uploadError) {
     console.error("Media upload failed:", uploadError);
-    message.textContent = `Submission stopped because media upload failed: ${uploadError.message || "Unknown upload error."}`;
+    message.textContent = t("status.mediaUploadFailed", { message: uploadError.message || t("error.unknownFunction") });
     message.className = "popup-form-message error";
     if (submitButton) submitButton.disabled = false;
     return;
@@ -1850,7 +2471,7 @@ popover.addEventListener("submit", async (submitEvent) => {
     share_public: sharePublic
   };
 
-  message.textContent = "Submitting saved log...";
+  message.textContent = t("status.submitting");
 
   let data;
   let error;
@@ -1861,7 +2482,7 @@ popover.addEventListener("submit", async (submitEvent) => {
     error = result.error;
   } catch (invokeError) {
     console.error("Submission function request failed:", invokeError);
-    message.textContent = `Submission failed: ${invokeError.message || "Could not reach the submission function."}`;
+    message.textContent = t("status.submissionFailed", { message: invokeError.message || t("error.submitFunction") });
     message.className = "popup-form-message error";
     resetTurnstileWidget();
     if (submitButton) submitButton.disabled = false;
@@ -1870,7 +2491,7 @@ popover.addEventListener("submit", async (submitEvent) => {
 
   if (error) {
     const errorMessage = typeof error === "string" ? error : await edgeFunctionErrorMessage(error);
-    message.textContent = `Submission failed: ${errorMessage}`;
+    message.textContent = t("status.submissionFailed", { message: errorMessage });
     message.className = "popup-form-message error";
     resetTurnstileWidget();
     if (submitButton) submitButton.disabled = false;
@@ -1881,7 +2502,7 @@ popover.addEventListener("submit", async (submitEvent) => {
     const errorMessage = [data.error, data.details, data.hint]
       .filter(Boolean)
       .join(" ");
-    message.textContent = `Submission failed: ${errorMessage}`;
+    message.textContent = t("status.submissionFailed", { message: errorMessage });
     message.className = "popup-form-message error";
     resetTurnstileWidget();
     if (submitButton) submitButton.disabled = false;
@@ -1890,12 +2511,12 @@ popover.addEventListener("submit", async (submitEvent) => {
 
   showOwnSubmissionLayer(sharePublic);
   alert(sharePublic
-    ? "Submission received. It is visible to you now and will appear on the public map after approval."
-    : "Submission received. It is saved as a secret log and is visible to you now."
+    ? t("alert.publicReceived")
+    : t("alert.secretReceived")
   );
   form.reset();
   resetTurnstileWidget();
-  message.textContent = "Submission received. Reloading map...";
+  message.textContent = t("status.receivedReloading");
   message.className = "popup-form-message success";
   clearDraftMarker();
   closePopover();
@@ -1909,17 +2530,17 @@ async function handleDeleteSubmission(form) {
   const submissionId = form.dataset.submissionId;
 
   if (!isValidDeletePassword(deletePassword)) {
-    message.textContent = "Enter the 6-digit delete password.";
+    message.textContent = t("validation.deletePassword");
     message.className = "ppgis-delete-message error";
     return;
   }
 
-  const confirmed = window.confirm("Delete this log permanently?");
+  const confirmed = window.confirm(t("confirm.delete"));
   if (!confirmed) return;
 
   const submitButton = form.querySelector('button[type="submit"]');
   if (submitButton) submitButton.disabled = true;
-  message.textContent = "Deleting and updating map...";
+  message.textContent = t("status.deleteWorking");
   message.className = "ppgis-delete-message";
 
   let data;
@@ -1935,7 +2556,7 @@ async function handleDeleteSubmission(form) {
     data = result.data;
     error = result.error;
   } catch (invokeError) {
-    message.textContent = `Delete failed: ${invokeError.message || "Could not reach the delete function."}`;
+    message.textContent = t("status.deleteFailed", { message: invokeError.message || t("error.deleteFunction") });
     message.className = "ppgis-delete-message error";
     if (submitButton) submitButton.disabled = false;
     return;
@@ -1943,23 +2564,23 @@ async function handleDeleteSubmission(form) {
 
   if (error) {
     const errorMessage = await edgeFunctionErrorMessage(error);
-    message.textContent = `Delete failed: ${errorMessage}`;
+    message.textContent = t("status.deleteFailed", { message: errorMessage });
     message.className = "ppgis-delete-message error";
     if (submitButton) submitButton.disabled = false;
     return;
   }
 
   if (data?.error) {
-    message.textContent = `Delete failed: ${data.error}`;
+    message.textContent = t("status.deleteFailed", { message: data.error });
     message.className = "ppgis-delete-message error";
     if (submitButton) submitButton.disabled = false;
     return;
   }
 
-  message.textContent = "Deleting and updating map...";
+  message.textContent = t("status.deleteWorking");
   message.className = "ppgis-delete-message success";
   await loadApprovedSubmissions();
-  message.textContent = "Deleting Complete";
+  message.textContent = t("status.deleteComplete");
   if (submitButton) submitButton.disabled = false;
 }
 
@@ -1974,20 +2595,20 @@ async function handleEditSubmission(form) {
   const submissionId = form.dataset.submissionId;
 
   if (!isValidDeletePassword(deletePassword)) {
-    message.textContent = "Enter the 6-digit edit password.";
+    message.textContent = t("validation.editPassword");
     message.className = "ppgis-edit-message error";
     return;
   }
 
   if (!title) {
-    message.textContent = "Title is required.";
+    message.textContent = t("validation.titleRequired");
     message.className = "ppgis-edit-message error";
     return;
   }
 
   const submitButton = form.querySelector('button[type="submit"]');
   if (submitButton) submitButton.disabled = true;
-  message.textContent = "Editing and updating map...";
+  message.textContent = t("status.editWorking");
   message.className = "ppgis-edit-message";
 
   let data;
@@ -2007,7 +2628,7 @@ async function handleEditSubmission(form) {
     data = result.data;
     error = result.error;
   } catch (invokeError) {
-    message.textContent = `Edit failed: ${invokeError.message || "Could not reach the edit function."}`;
+    message.textContent = t("status.editFailed", { message: invokeError.message || t("error.editFunction") });
     message.className = "ppgis-edit-message error";
     if (submitButton) submitButton.disabled = false;
     return;
@@ -2015,23 +2636,23 @@ async function handleEditSubmission(form) {
 
   if (error) {
     const errorMessage = await edgeFunctionErrorMessage(error);
-    message.textContent = `Edit failed: ${errorMessage}`;
+    message.textContent = t("status.editFailed", { message: errorMessage });
     message.className = "ppgis-edit-message error";
     if (submitButton) submitButton.disabled = false;
     return;
   }
 
   if (data?.error) {
-    message.textContent = `Edit failed: ${data.error}`;
+    message.textContent = t("status.editFailed", { message: data.error });
     message.className = "ppgis-edit-message error";
     if (submitButton) submitButton.disabled = false;
     return;
   }
 
-  message.textContent = "Editing and updating map...";
+  message.textContent = t("status.editWorking");
   message.className = "ppgis-edit-message success";
   await loadApprovedSubmissions();
-  message.textContent = "Editing Complete";
+  message.textContent = t("status.editComplete");
   if (submitButton) submitButton.disabled = false;
 }
 
@@ -2053,6 +2674,7 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener("scroll", refreshMapSizeSoon);
 }
 
+applyLanguage();
 refreshAuthState();
 showWelcomeModal();
 refreshMapSizeSoon();

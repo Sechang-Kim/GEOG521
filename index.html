@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Seeing School Differently</title>
-  <link rel="stylesheet" href="styles.css?v=20260604-mapheight1">
+  <link rel="stylesheet" href="styles.css?v=20260604-authbutton1">
 </head>
 <body>
   <header class="site-header">
@@ -276,7 +276,13 @@
 
     function renderAuthNav(user) {
       if (!user) {
-        navAuth.innerHTML = '<button class="nav-auth-button" type="button" data-auth-action="sign-in">Sign in / Sign up</button>';
+        navAuth.innerHTML = `
+          <button class="nav-auth-button" type="button" data-auth-action="sign-in" aria-label="Sign in or sign up">
+            <span class="nav-auth-full">Sign in / Sign up</span>
+            <span class="nav-auth-short">Sign in</span>
+            <span class="nav-auth-icon" aria-hidden="true">S</span>
+          </button>
+        `;
         return;
       }
 

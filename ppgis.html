@@ -3,15 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Participatory GIS Platform</title>
+  <title>The Spatial Log</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="styles.css?v=20260604-mapheight1">
-  <link rel="stylesheet" href="css/ppgis.css?v=20260604-publicanon1">
+  <link rel="stylesheet" href="styles.css?v=20260604-authbutton1">
+  <link rel="stylesheet" href="css/ppgis.css?v=20260605-i18n2">
 </head>
 <body class="ppgis-map-page">
   <header class="site-header">
-    <nav class="nav-bar app-nav nav-logo-layout" aria-label="Primary navigation">
-      <div class="nav-spacer" aria-hidden="true"></div>
+    <nav class="nav-bar app-nav nav-logo-layout" aria-label="Primary navigation" data-i18n-aria-label="nav.primary">
+      <div class="nav-spacer nav-language" id="languageToggle" role="group" aria-label="Language" data-i18n-aria-label="language.selector">
+        <button class="language-option is-active" type="button" data-lang-option="en" lang="en" aria-label="English" aria-pressed="true">ENG</button>
+        <span aria-hidden="true">|</span>
+        <button class="language-option" type="button" data-lang-option="ko" lang="ko" aria-label="한국어" aria-pressed="false">KOR</button>
+      </div>
       <a class="brand nav-logo-link" href="index.html" aria-label="Seeing School Differently home">
         <img class="nav-logo" src="img/logo.png" alt="The Spatial Log">
       </a>
@@ -20,29 +27,29 @@
   </header>
 
   <main class="ppgis-popup-shell">
-    <button class="ppgis-locate-fab" id="ppgisLocate" type="button" aria-label="Use my location" title="Use my location">
+    <button class="ppgis-locate-fab" id="ppgisLocate" type="button" aria-label="Use my location" title="Use my location" data-i18n-aria-label="location.use" data-i18n-title="location.use">
       <span aria-hidden="true">◎</span>
     </button>
 
-    <section class="ppgis-welcome-modal" id="ppgisWelcomeModal" aria-label="Participatory GIS instructions" aria-modal="true" role="dialog" hidden>
-      <button class="ppgis-welcome-close" id="ppgisWelcomeClose" type="button" aria-label="Close">&times;</button>
-      <p class="eyebrow">Participatory GIS</p>
-      <h1>Share a Place-Based Story</h1>
-      <p>
+    <section class="ppgis-welcome-modal" id="ppgisWelcomeModal" aria-label="Participatory GIS instructions" aria-modal="true" role="dialog" hidden data-i18n-aria-label="welcome.aria">
+      <button class="ppgis-welcome-close" id="ppgisWelcomeClose" type="button" aria-label="Close" data-i18n-aria-label="common.close">&times;</button>
+      <p class="eyebrow" data-i18n="welcome.eyebrow">Participatory GIS</p>
+      <h1 data-i18n="welcome.title">Share a Place-Based Story</h1>
+      <p data-i18n="welcome.copy">
         Click the map to place a marker. Signed-in users can submit a title,
         story, and anonymity choice. Visitors who are not signed in can view
         approved public submissions.
       </p>
       <div class="ppgis-welcome-actions">
-        <button id="ppgisWelcomeDontShow" type="button">Do not show for 24 hours</button>
-        <button id="ppgisWelcomeOk" type="button">Close</button>
+        <button id="ppgisWelcomeDontShow" type="button" data-i18n="welcome.hide24">Do not show for 24 hours</button>
+        <button id="ppgisWelcomeOk" type="button" data-i18n="common.close">Close</button>
       </div>
       <p id="ppgisLocationStatus" class="ppgis-location-status" aria-live="polite"></p>
     </section>
 
     <aside id="ppgisPopover" class="ppgis-popover" aria-live="polite"></aside>
 
-    <section class="ppgis-full-map" aria-label="Participatory GIS map">
+    <section class="ppgis-full-map" aria-label="Participatory GIS map" data-i18n-aria-label="map.aria">
       <div id="ppgisPopupMap"></div>
     </section>
   </main>
@@ -50,7 +57,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-  <script src="js/ppgis.js?v=20260604-sessionform1"></script>
+  <script src="js/ppgis.js?v=20260605-i18n2"></script>
 </body>
 </html>
 
