@@ -460,6 +460,14 @@
   box-shadow: 0 14px 34px rgba(16, 35, 49, 0.22);
 }
 
+.ppgis-locate-fab img {
+  width: 22px;
+  height: 22px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .ppgis-welcome-modal h1 {
   margin: 0;
   padding-right: 34px;
@@ -632,11 +640,12 @@
 
 #ppgisPopupMap .leaflet-control-layers {
   overflow: visible;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(16, 35, 49, 0.16);
-  border-radius: 8px;
-  box-shadow: 0 14px 34px rgba(16, 35, 49, 0.22);
-  backdrop-filter: blur(12px);
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid rgba(16, 35, 49, 0.18);
+  border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.28);
+  font-family: inherit;
 }
 
 #ppgisPopupMap .leaflet-top {
@@ -647,6 +656,7 @@
   width: 42px;
   height: 42px;
   background-size: 22px 22px;
+  border-radius: 4px;
 }
 
 #ppgisPopupMap .leaflet-control-layers:not(:hover):not(:focus-within) {
@@ -664,25 +674,44 @@
 #ppgisPopupMap .leaflet-control-layers-expanded {
   width: auto;
   height: auto;
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 
 #ppgisPopupMap .leaflet-control-layers-list {
-  display: grid;
-  gap: 8px;
+  display: block;
+  margin: 0;
   color: var(--ink);
-  font-family: inherit;
-  font-size: 0.84rem;
-  font-weight: 750;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 #ppgisPopupMap .leaflet-control-layers label {
+  display: block;
   margin: 0;
+  padding: 4px 2px;
+  border-radius: 4px;
   cursor: pointer;
 }
 
+#ppgisPopupMap .leaflet-control-layers label:hover,
+#ppgisPopupMap .leaflet-control-layers label:focus-within {
+  background: rgba(238, 244, 241, 0.92);
+}
+
+#ppgisPopupMap .leaflet-control-layers label span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  white-space: nowrap;
+}
+
 #ppgisPopupMap .leaflet-control-layers input {
-  margin: 0 9px 0 0;
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  margin: 0;
   accent-color: var(--accent);
 }
 
