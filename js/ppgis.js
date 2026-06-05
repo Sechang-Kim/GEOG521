@@ -11,6 +11,12 @@ const PROFILE_CONSENT_KEY = "ppgisResearchConsentAccepted";
 const WELCOME_DISMISSED_KEY = "ppgisWelcomeDismissedUntil";
 const LANGUAGE_KEY = "ppgisLanguage";
 const DEFAULT_MARKER_COLOR = "#ff7f00";
+const SUBMISSION_MARKER_SIZE_BY_ZOOM = [
+  { maxZoom: 5, radius: 2.8, ownerRadius: 3.2, secretRadius: 3.2, weight: 1, ownerWeight: 1.15 },
+  { maxZoom: 8, radius: 3.4, ownerRadius: 3.8, secretRadius: 3.8, weight: 1.15, ownerWeight: 1.35 },
+  { maxZoom: 11, radius: 4.2, ownerRadius: 4.8, secretRadius: 4.8, weight: 1.35, ownerWeight: 1.6 },
+  { maxZoom: Infinity, radius: 5.2, ownerRadius: 5.8, secretRadius: 5.8, weight: 1.55, ownerWeight: 1.8 }
+];
 const MEDIA_UPLOAD_TIMEOUT_MS = 45000;
 const FUNCTION_TIMEOUT_MS = 30000;
 const MARKER_COLOR_OPTIONS = [
@@ -2047,35 +2053,57 @@ async function loadMyLogRows(options = {}) {
   );
 }
 
+function submissionMarkerSizeForZoom(row, zoom = map.getZoom()) {
+  const size = SUBMISSION_MARKER_SIZE_BY_ZOOM.find((entry) => zoom <= entry.maxZoom) || SUBMISSION_MARKER_SIZE_BY_ZOOM[SUBMISSION_MARKER_SIZE_BY_ZOOM.length - 1];
+  return {
+    radius: row.is_secret ? size.secretRadius : row.is_owner ? size.ownerRadius : size.radius,
+    weight: row.is_owner ? size.ownerWeight : size.weight
+  };
+}
+
 function markerOptionsForSubmission(row) {
+  const markerSize = submissionMarkerSizeForZoom(row);
+
   if (row.is_secret) {
     return {
-      radius: 8,
+      radius: markerSize.radius,
       color: "#102331",
       fillColor: "#7a8791",
       fillOpacity: 0.62,
-      weight: 2,
-      dashArray: "4 3",
+      weight: markerSize.weight,
+      dashArray: "3 3",
       bubblingMouseEvents: false
     };
   }
 
   const markerColor = validMarkerColor(row.marker_color);
   return {
-    radius: row.is_owner ? 8 : 7,
-    color: row.is_owner ? "#102331" : markerColor,
+    radius: markerSize.radius,
+    color: "#102331",
     fillColor: markerColor,
     fillOpacity: row.is_owner ? 0.92 : 0.86,
-    weight: row.is_owner ? 3 : 2,
+    weight: markerSize.weight,
     bubblingMouseEvents: false
   };
 }
 
 function renderSubmissionMarker(row) {
-  L.circleMarker([Number(row.latitude), Number(row.longitude)], markerOptionsForSubmission(row))
+  const marker = L.circleMarker([Number(row.latitude), Number(row.longitude)], markerOptionsForSubmission(row));
+  marker.submissionRow = row;
+  marker
     .on("click", () => publicPanel(row))
     .addTo(approvedLayer);
 }
+
+function updateSubmissionMarkerStyles() {
+  approvedLayer.eachLayer((layer) => {
+    if (layer.submissionRow && typeof layer.setStyle === "function") {
+      layer.setStyle(markerOptionsForSubmission(layer.submissionRow));
+    }
+  });
+}
+
+map.on("zoomend", updateSubmissionMarkerStyles);
 
 async function loadApprovedSubmissions() {
   const requestId = ++mapRenderRequestId;
