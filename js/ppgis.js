@@ -1232,6 +1232,62 @@ function withTimeout(promise, timeoutMs, label) {
   ]);
 }
 
+async function invokeSubmitFunction(body) {
+  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+
+  if (sessionError || !accessToken) {
+    throw new Error("Sign in again before submitting.");
+  }
+
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), FUNCTION_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/submit-ppgis-log`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": `Bearer ${accessToken}`
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+
+    const responseText = await response.text();
+    let responseBody = null;
+
+    if (responseText) {
+      try {
+        responseBody = JSON.parse(responseText);
+      } catch {
+        responseBody = { error: responseText };
+      }
+    }
+
+    if (!response.ok || responseBody?.error) {
+      return {
+        data: responseBody,
+        error: [
+          responseBody?.error || `HTTP ${response.status}`,
+          responseBody?.details,
+          responseBody?.hint
+        ].filter(Boolean).join(" ")
+      };
+    }
+
+    return { data: responseBody, error: null };
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("Submission request timed out after 30 seconds. Check the submit-ppgis-log Edge Function logs.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
 async function uploadMediaFile(file, folder, maxBytes) {
   if (!file) return null;
 
@@ -1781,13 +1837,7 @@ popover.addEventListener("submit", async (submitEvent) => {
   let error;
 
   try {
-    const result = await withTimeout(
-      supabaseClient.functions.invoke("submit-ppgis-log", {
-        body: functionPayload
-      }),
-      FUNCTION_TIMEOUT_MS,
-      "Submission request"
-    );
+    const result = await invokeSubmitFunction(functionPayload);
     data = result.data;
     error = result.error;
   } catch (invokeError) {
@@ -1800,7 +1850,7 @@ popover.addEventListener("submit", async (submitEvent) => {
   }
 
   if (error) {
-    const errorMessage = await edgeFunctionErrorMessage(error);
+    const errorMessage = typeof error === "string" ? error : await edgeFunctionErrorMessage(error);
     message.textContent = `Submission failed: ${errorMessage}`;
     message.className = "popup-form-message error";
     resetTurnstileWidget();
